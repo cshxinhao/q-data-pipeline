@@ -1,0 +1,211 @@
+from functools import lru_cache
+from pathlib import Path
+import time
+from typing import Callable
+
+import pandas as pd
+from tqdm import tqdm
+import tushare as ts
+
+from .config import TUSHARE_TOKEN, DataRawPath
+
+
+@lru_cache(maxsize=1)
+def get_pro():
+    return ts.pro_api(TUSHARE_TOKEN)
+
+
+def convert_dt_to_str(dt: pd.Timestamp):
+    """
+    Convert datetime to string in format "YYYYMMDD" (required by tushare API).
+    """
+    return dt.strftime("%Y%m%d")
+
+
+def try_n_times(task: Callable, n: int, seconds: int, **kwargs):
+    count = 0
+    while True:
+        try:
+            task(**kwargs)
+            return True
+        except Exception as e:
+            print(e)
+            count += 1
+            if count >= n:
+                return False
+            time.sleep(seconds)
+
+
+def download_trade_calendar(start_date: str, end_date: str):
+    """
+    Download trade calendar from Tushare.
+
+    Suggest download full history every time.
+    """
+    # Init the interface
+    pro = get_pro()
+
+    trade_calendar = pro.trade_cal(
+        exchange="",
+        start_date=convert_dt_to_str(pd.Timestamp(start_date)),
+        end_date=convert_dt_to_str(pd.Timestamp(end_date)),
+    )
+
+    # Preprocess
+    trade_calendar["cal_date"] = pd.to_datetime(trade_calendar.loc[:, "cal_date"])
+    trade_calendar["pretrade_date"] = pd.to_datetime(
+        trade_calendar.loc[:, "pretrade_date"]
+    )
+    trade_calendar.sort_values(by="cal_date", inplace=True)
+
+    # Save
+    filename = DataRawPath().trade_calendar_dir / "trade_calendar.parquet"
+    trade_calendar.to_parquet(filename)
+
+
+def download_ticker_mapper():
+    # Init the interface
+    pro = get_pro()
+
+    listed = pro.stock_basic(
+        exchange="",
+        list_status="L",
+        fields="ts_code,symbol,name,area,industry,fullname,enname,market,exchange,list_status,list_date,delist_date,is_hs,act_name,act_ent_type",
+    )
+
+    delisted = pro.stock_basic(
+        exchange="",
+        list_status="D",
+        fields="ts_code,symbol,name,area,industry,fullname,enname,market,exchange,list_status,list_date,delist_date,is_hs,act_name,act_ent_type",
+    )
+
+    paused = pro.stock_basic(
+        exchange="",
+        list_status="P",
+        fields="ts_code,symbol,name,area,industry,fullname,enname,market,exchange,list_status,list_date,delist_date,is_hs,act_name,act_ent_type",
+    )
+
+    # Concat all
+    ticker_mapper: pd.DataFrame = pd.concat([listed, delisted, paused], axis=0)
+
+    # Preprocess
+    ticker_mapper["list_date"] = pd.to_datetime(ticker_mapper.loc[:, "list_date"])
+    ticker_mapper["delist_date"] = pd.to_datetime(ticker_mapper.loc[:, "delist_date"])
+
+    # To save
+    filename = DataRawPath().ticker_mapper_dir / "ticker_mapper.parquet"
+    ticker_mapper.to_parquet(filename)
+
+
+def _download_bar_price_for_dt(dt: pd.Timestamp, filename: Path):
+    pro = get_pro()
+    df = pro.daily(trade_date=convert_dt_to_str(dt))
+    if df.shape[0] > 0:
+        df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
+    df.to_parquet(filename)
+
+
+def download_1day_bar_price(start_date: str, end_date: str, replace: bool = False):
+    """
+    Download 1day bar price from Tushare.
+
+    The tushare API suggests download bar day by day.
+    """
+    # Create folder
+    file_path = DataRawPath().bar_1day_dir
+    file_path.mkdir(parents=True, exist_ok=True)
+
+    for dt in tqdm(reversed(pd.date_range(start_date, end_date, freq="B"))):
+        filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
+        if filename.exists() and not replace:
+            continue
+        result = try_n_times(
+            _download_bar_price_for_dt,
+            n=5,
+            seconds=30,
+            dt=dt,
+            filename=filename,
+        )
+
+        if result:
+            print(f"{dt}: successful ...")
+        else:
+            print(f"{dt}: failed downloading ...")
+
+        time.sleep(1)
+
+
+def _download_adj_factor_for_dt(dt: pd.Timestamp, filename: Path):
+    pro = get_pro()
+    df = pro.adj_factor(trade_date=convert_dt_to_str(dt))
+    if df.shape[0] > 0:
+        df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
+    df.to_parquet(filename)
+
+
+def download_adj_factor(start_date: str, end_date: str, replace: bool = False):
+    """
+    Download adj factor from Tushare.
+
+    The tushare API suggests download adj factor day by day.
+    """
+    # Create folder
+    file_path = DataRawPath().adj_dir
+    file_path.mkdir(parents=True, exist_ok=True)
+
+    for dt in tqdm(reversed(pd.date_range(start_date, end_date, freq="B"))):
+        filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
+        if filename.exists() and not replace:
+            continue
+        result = try_n_times(
+            _download_adj_factor_for_dt,
+            n=5,
+            seconds=30,
+            dt=dt,
+            filename=filename,
+        )
+
+        if result:
+            print(f"{dt}: successful ...")
+        else:
+            print(f"{dt}: failed downloading ...")
+
+        time.sleep(30)
+
+
+def _download_basic_for_dt(dt: pd.Timestamp, filename: Path):
+    pro = get_pro()
+    df = pro.daily_basic(trade_date=convert_dt_to_str(dt))
+    if df.shape[0] > 0:
+        df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
+    df.to_parquet(filename)
+
+
+def download_basic(start_date: str, end_date: str, replace: bool = False):
+    """
+    Download basic data from Tushare.
+
+    The tushare API suggests download basic data day by day.
+    """
+    # Create folder
+    file_path = DataRawPath().basic_dir
+    file_path.mkdir(parents=True, exist_ok=True)
+
+    for dt in tqdm(reversed(pd.date_range(start_date, end_date, freq="B"))):
+        filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
+        if filename.exists() and not replace:
+            continue
+        result = try_n_times(
+            _download_basic_for_dt,
+            n=5,
+            seconds=30,
+            dt=dt,
+            filename=filename,
+        )
+
+        if result:
+            print(f"{dt}: successful ...")
+        else:
+            print(f"{dt}: failed downloading ...")
+
+        time.sleep(10)

@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Conda (不要提交具体的环境二进制文件，只提交 yml)
+conda-meta/
+
+# Data (绝对禁止提交)
+*.csv
+*.parquet
+*.pkl
+*.h5
+*.feather
+data/
+logs/
+
+# Secrets
+.env
+*.key
+*.pem
+credentials.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,6 @@
+- [x] Tushare CLI `download` command works for `trade-cal`
+- [x] Tushare CLI `download` command works for `1day-bar-price`
+- [x] Tushare CLI `clean` command works for `1day-bar-price`
+- [x] Configuration is loaded correctly from `.env` or environment variables
+- [x] XTQuant structure is initialized
+- [x] Futu structure is initialized
