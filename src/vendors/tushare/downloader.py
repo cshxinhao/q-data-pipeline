@@ -60,7 +60,7 @@ def download_trade_calendar(start_date: str, end_date: str):
     trade_calendar.sort_values(by="cal_date", inplace=True)
 
     # Save
-    filename = DataRawPath().trade_calendar_dir / "trade_calendar.parquet"
+    filename = DataRawPath().trade_calendar / "trade_calendar.parquet"
     trade_calendar.to_parquet(filename)
 
 
@@ -94,7 +94,7 @@ def download_ticker_mapper():
     ticker_mapper["delist_date"] = pd.to_datetime(ticker_mapper.loc[:, "delist_date"])
 
     # To save
-    filename = DataRawPath().ticker_mapper_dir / "ticker_mapper.parquet"
+    filename = DataRawPath().ticker_mapper / "ticker_mapper.parquet"
     ticker_mapper.to_parquet(filename)
 
 
@@ -113,8 +113,7 @@ def download_1day_bar(start_date: str, end_date: str, replace: bool = False):
     The tushare API suggests download bar day by day.
     """
     # Create folder
-    file_path = DataRawPath().bar_1day_dir
-    file_path.mkdir(parents=True, exist_ok=True)
+    file_path = DataRawPath().bar_1day
 
     for dt in reversed(pd.date_range(start_date, end_date, freq="B")):
         filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
@@ -154,8 +153,7 @@ def download_adj_factor(start_date: str, end_date: str, replace: bool = False):
     The tushare API suggests download adj factor day by day.
     """
     # Create folder
-    file_path = DataRawPath().adj_factor_dir
-    file_path.mkdir(parents=True, exist_ok=True)
+    file_path = DataRawPath().adj_factor
 
     for dt in reversed(pd.date_range(start_date, end_date, freq="B")):
         filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
@@ -193,8 +191,7 @@ def download_basic(start_date: str, end_date: str, replace: bool = False):
     The tushare API suggests download basic data day by day.
     """
     # Create folder
-    file_path = DataRawPath().basic_dir
-    file_path.mkdir(parents=True, exist_ok=True)
+    file_path = DataRawPath().basic
 
     for dt in reversed(pd.date_range(start_date, end_date, freq="B")):
         filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"

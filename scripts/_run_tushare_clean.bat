@@ -8,8 +8,8 @@ set "PROJECT_ROOT=%CD%"
 set "replace=True"
 
 :: Set date range for demonstration
-set "START_DATE=20120101"
-::set "START_DATE=20260227"
+@REM set "START_DATE=20120101"
+set "START_DATE=20260227"
 set "END_DATE=20260228"
 
 echo Running Tushare pipeline - clean from %PROJECT_ROOT%

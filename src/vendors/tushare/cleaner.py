@@ -17,8 +17,8 @@ from src.common.schema import (
 
 
 def clean_trade_calendar():
-    input_filename = DataRawPath().trade_calendar_dir / "trade_calendar.parquet"
-    output_filename = DataCleanPath().trade_calendar_dir / "trade_calendar.parquet"
+    input_filename = DataRawPath().trade_calendar / "trade_calendar.parquet"
+    output_filename = DataCleanPath().trade_calendar / "trade_calendar.parquet"
 
     # Load data
     try:
@@ -43,8 +43,8 @@ def clean_trade_calendar():
 
 
 def clean_identity():
-    input_filename = DataRawPath().ticker_mapper_dir / "ticker_mapper.parquet"
-    output_filename = DataCleanPath().identity_dir / "identity.parquet"
+    input_filename = DataRawPath().ticker_mapper / "ticker_mapper.parquet"
+    output_filename = DataCleanPath().identity / "identity.parquet"
 
     # Load data
     try:
@@ -89,13 +89,13 @@ def _clean_1day_bar_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     """
 
     output_filename = (
-        DataCleanPath().bar_1day_dir / f"{dt.strftime('%Y-%m-%d')}.parquet"
+        DataCleanPath().bar_1day / f"{dt.strftime('%Y-%m-%d')}.parquet"
     )
 
     if not replace and output_filename.exists():
         return True
 
-    input_filename = DataRawPath().bar_1day_dir / f"{dt.strftime('%Y-%m-%d')}.parquet"
+    input_filename = DataRawPath().bar_1day / f"{dt.strftime('%Y-%m-%d')}.parquet"
 
     # Load data
     try:
@@ -127,7 +127,6 @@ def _clean_1day_bar_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     # Extract required fields
     df = df.reindex(columns=REQ_1D_BAR_FIELDS)
 
-    output_filename.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(output_filename)
     return True
 
@@ -144,13 +143,13 @@ def _clean_adj_factor_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     Clean adj factor data (downloaded by date) from Tushare.
     """
     output_filename = (
-        DataCleanPath().adj_factor_dir / f"{dt.strftime('%Y-%m-%d')}.parquet"
+        DataCleanPath().adj_factor / f"{dt.strftime('%Y-%m-%d')}.parquet"
     )
 
     if not replace and output_filename.exists():
         return True
 
-    input_filename = DataRawPath().adj_factor_dir / f"{dt.strftime('%Y-%m-%d')}.parquet"
+    input_filename = DataRawPath().adj_factor / f"{dt.strftime('%Y-%m-%d')}.parquet"
 
     # Load data
     try:
@@ -173,8 +172,7 @@ def _clean_adj_factor_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
 
     # Extract required fields
     df = df.reindex(columns=REQ_ADJ_FACTOR_FIELDS)
-
-    output_filename.parent.mkdir(parents=True, exist_ok=True)
+    
     df.to_parquet(output_filename)
     return True
 
@@ -191,12 +189,12 @@ def _clean_cap_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     Clean cap data (downloaded by date) from Tushare.
     """
 
-    output_filename = DataCleanPath().cap_dir / f"{dt.strftime('%Y-%m-%d')}.parquet"
+    output_filename = DataCleanPath().cap / f"{dt.strftime('%Y-%m-%d')}.parquet"
 
     if not replace and output_filename.exists():
         return True
 
-    input_filename = DataRawPath().basic_dir / f"{dt.strftime('%Y-%m-%d')}.parquet"
+    input_filename = DataRawPath().basic / f"{dt.strftime('%Y-%m-%d')}.parquet"
 
     # Load data
     try:
@@ -231,7 +229,6 @@ def _clean_cap_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     # Extract required fields
     df = df.reindex(columns=REQ_CAP_FIELDS)
 
-    output_filename.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(output_filename)
     return True
 
@@ -248,13 +245,13 @@ def _clean_valuation_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     Clean valuation data (downloaded by date) from Tushare.
     """
     output_filename = (
-        DataCleanPath().valuation_dir / f"{dt.strftime('%Y-%m-%d')}.parquet"
+        DataCleanPath().valuation / f"{dt.strftime('%Y-%m-%d')}.parquet"
     )
 
     if not replace and output_filename.exists():
         return True
 
-    input_filename = DataRawPath().basic_dir / f"{dt.strftime('%Y-%m-%d')}.parquet"
+    input_filename = DataRawPath().basic / f"{dt.strftime('%Y-%m-%d')}.parquet"
 
     # Load data
     try:
@@ -277,7 +274,6 @@ def _clean_valuation_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     # Extract required fields
     df = df.reindex(columns=REQ_VALUATION_FIELDS)
 
-    output_filename.parent.mkdir(parents=True, exist_ok=True)
     df.to_parquet(output_filename)
     return True
 
@@ -314,8 +310,7 @@ def clean_dataset(year: int, replace: bool = False):
     end_date = pd.Timestamp(f"{year}-12-31").strftime("%Y-%m-%d")
 
     # Path and filename
-    output_filename = DataCleanPath().dataset_dir / f"{year}.parquet"
-    output_filename.parent.mkdir(parents=True, exist_ok=True)
+    output_filename = DataCleanPath().dataset / f"{year}.parquet"
 
     if not replace and output_filename.exists():
         return True
@@ -323,22 +318,22 @@ def clean_dataset(year: int, replace: bool = False):
     # Load data
     logger.info(f"Before concatenating dataset, load components the year {year} ...")
     trade_calendar = pd.read_parquet(
-        DataCleanPath().trade_calendar_dir / "trade_calendar.parquet"
+        DataCleanPath().trade_calendar / "trade_calendar.parquet"
     ).sort_values(by="calendar_date")
     identity = pd.read_parquet(
-        DataCleanPath().identity_dir / "identity.parquet"
+        DataCleanPath().identity / "identity.parquet"
     ).sort_values(by="symbol")
     unadj_1d_bar = _load_parquets_under_directory(
-        DataCleanPath().bar_1day_dir, start_date, end_date
+        DataCleanPath().bar_1day, start_date, end_date
     ).sort_values(["datetime", "symbol"])
     adj_factor = _load_parquets_under_directory(
-        DataCleanPath().adj_factor_dir, start_date, end_date
+        DataCleanPath().adj_factor, start_date, end_date
     ).sort_values(["datetime", "symbol"])
     cap = _load_parquets_under_directory(
-        DataCleanPath().cap_dir, start_date, end_date
+        DataCleanPath().cap, start_date, end_date
     ).sort_values(["datetime", "symbol"])
     valuation = _load_parquets_under_directory(
-        DataCleanPath().valuation_dir, start_date, end_date
+        DataCleanPath().valuation, start_date, end_date
     ).sort_values(["datetime", "symbol"])
 
     # Concat
@@ -389,10 +384,10 @@ def clean_listed_days():
     # Load data
     logger.info("Clean listed days ...")
     trade_calendar = pd.read_parquet(
-        DataCleanPath().trade_calendar_dir / "trade_calendar.parquet"
+        DataCleanPath().trade_calendar / "trade_calendar.parquet"
     ).sort_values(by="calendar_date")
     ls = []
-    for filename in DataCleanPath().dataset_dir.glob("*.parquet"):
+    for filename in DataCleanPath().dataset.glob("*.parquet"):
         dataset = pd.read_parquet(
             filename,
             columns=["datetime", "symbol", "list_date", "close", "volume", "board"],
@@ -408,9 +403,7 @@ def clean_listed_days():
     )
 
     df_day_count = _add_day_count_columns(dataset, trade_calendar)
-    df_day_count.to_parquet(
-        r"D:\data_warehouse\vendor_clean_data\listed_days\tushare\listed_days.parquet"
-    )
+    df_day_count.to_parquet(DataCleanPath().listed_days / "listed_days.parquet")
 
 
 def _add_day_count_columns(
