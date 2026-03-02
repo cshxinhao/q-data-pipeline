@@ -103,5 +103,10 @@ def clean_dataset(year, replace):
     cleaner.clean_dataset(year=year, replace=replace)
 
 
+@clean.command("listed-days")
+def clean_listed_days():
+    cleaner.clean_listed_days()
+
+
 if __name__ == "__main__":
     cli()

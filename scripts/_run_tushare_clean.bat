@@ -8,32 +8,14 @@ set "PROJECT_ROOT=%CD%"
 set "replace=True"
 
 :: Set date range for demonstration
-::set "START_DATE=20120101"
-set "START_DATE=20260227"
+set "START_DATE=20120101"
+::set "START_DATE=20260227"
 set "END_DATE=20260228"
 
-echo Running Tushare pipeline from %PROJECT_ROOT%
+echo Running Tushare pipeline - clean from %PROJECT_ROOT%
 
 :: Activate the env
 call conda activate %PROJECT_ROOT%\venv\tushare
-
-
-:: Download
-
-echo Step: Downloading trade calendar (20120101 - %END_DATE%)...
-python -m src.vendors.tushare.cli download trade-cal --start 20120101 --end %END_DATE%
-
-echo Step: Downloading ticker mapper...
-python -m src.vendors.tushare.cli download ticker-mapper
-
-echo Step: Downloading 1-day bar prices (%START_DATE% - %END_DATE%)...
-python -m src.vendors.tushare.cli download 1day-bar --start %START_DATE% --end %END_DATE% --replace %replace%
-
-echo Step: Downloading adj factor (%START_DATE% - %END_DATE%)...
-python -m src.vendors.tushare.cli download adj-factor --start %START_DATE% --end %END_DATE% --replace %replace%
-
-echo Step: Downloading basic (%START_DATE% - %END_DATE%)...
-python -m src.vendors.tushare.cli download basic --start %START_DATE% --end %END_DATE% --replace %replace%
 
 
 :: Clean
@@ -56,7 +38,10 @@ python -m src.vendors.tushare.cli clean cap --start %START_DATE% --end %END_DATE
 echo Step: Cleaning basic info to valuation (%START_DATE% - %END_DATE%)...
 python -m src.vendors.tushare.cli clean valuation --start %START_DATE% --end %END_DATE% --replace %replace%
 
+echo Step: Cleaning listed days...
+python -m src.vendors.tushare.cli clean listed-days
 
-echo Tushare pipeline completed.
+
+echo Tushare pipeline - clean completed.
 
 endlocal

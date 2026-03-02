@@ -1,4 +1,3 @@
-tushare
 pandas
 pyarrow
 tqdm
@@ -7,3 +6,4 @@ lxml
 simplejson
 click
 python-dotenv
+tushare

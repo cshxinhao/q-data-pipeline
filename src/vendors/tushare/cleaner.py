@@ -5,6 +5,8 @@ from src.logger import logger
 from .config import (
     DataRawPath,
     DataCleanPath,
+)
+from src.common.schema import (
     REQ_TRADE_CALENDAR_FIELDS,
     REQ_IDENTITY_FIELDS,
     REQ_1D_BAR_FIELDS,
@@ -65,6 +67,16 @@ def clean_identity():
     df["list_date"] = pd.to_datetime(df["list_date"])
     df["delist_date"] = pd.to_datetime(df["delist_date"])
     df["delist_date"] = df["delist_date"].where(~df["delist_date"].isna(), "2099-12-31")
+
+    # Map board to board type
+    df["board"] = df["board"].map(
+        {
+            "主板": "MAIN",
+            "创业板": "CHINEXT",
+            "科创板": "STAR",
+            "北交所": "BSE",
+        }
+    )
 
     df = df.reindex(columns=REQ_IDENTITY_FIELDS)
     df.to_parquet(output_filename)
@@ -309,9 +321,7 @@ def clean_dataset(year: int, replace: bool = False):
         return True
 
     # Load data
-    logger.info(
-        f"Before concatenating dataset, load components from {start_date} to {end_date} ..."
-    )
+    logger.info(f"Before concatenating dataset, load components the year {year} ...")
     trade_calendar = pd.read_parquet(
         DataCleanPath().trade_calendar_dir / "trade_calendar.parquet"
     ).sort_values(by="calendar_date")
@@ -372,3 +382,123 @@ def clean_dataset(year: int, replace: bool = False):
     dataset.to_parquet(output_filename)
     logger.info(f"Done cleaning dataset from {start_date} to {end_date}")
     return True
+
+
+def clean_listed_days():
+
+    # Load data
+    logger.info("Clean listed days ...")
+    trade_calendar = pd.read_parquet(
+        DataCleanPath().trade_calendar_dir / "trade_calendar.parquet"
+    ).sort_values(by="calendar_date")
+    ls = []
+    for filename in DataCleanPath().dataset_dir.glob("*.parquet"):
+        dataset = pd.read_parquet(
+            filename,
+            columns=["datetime", "symbol", "list_date", "close", "volume", "board"],
+        ).sort_values(["datetime", "symbol"])
+        ls.append(dataset)
+    dataset = pd.concat(ls, axis=0)
+
+    # 000004.SZ and 000005.SZ was IPO before the first trade calendar date
+    # Because at that time, they were on trial stage
+    # Reset their list_date to the first trade calendar date
+    dataset.loc[dataset["symbol"].isin(["000004.SZ", "000005.SZ"]), "list_date"] = (
+        trade_calendar.query("is_open == 1").iloc[0]["calendar_date"]
+    )
+
+    df_day_count = _add_day_count_columns(dataset, trade_calendar)
+    df_day_count.to_parquet(
+        r"D:\data_warehouse\vendor_clean_data\listed_days\tushare\listed_days.parquet"
+    )
+
+
+def _add_day_count_columns(
+    df: pd.DataFrame, trade_calendar: pd.DataFrame
+) -> pd.DataFrame:
+    """
+    Vectorized calculation of:
+      - list_days: number of **market-open** days from list_date (inclusive, starts at 1)
+      - continuous_trading_days: resets after suspension (gap in open days)
+      - suspension_days: number of consecutive missed open market days before current trade
+
+    Parameters:
+    -----------
+    df : DataFrame with columns ['datetime', 'symbol', 'list_date']
+         - datetime: actual trading days of the stock
+         - list_date: IPO/listing date per symbol
+    trade_calendar : DataFrame with columns ['calendar_date', 'is_open']
+         - calendar_date: all potential market dates (sorted)
+         - is_open: 1 = market open, 0 = closed/holiday
+
+    Returns:
+    --------
+    df with added columns: list_days, continuous_trading_days, suspension_days
+    """
+    df = df.copy()
+    trade_calendar = trade_calendar.copy()
+
+    # Ensure datetime types
+    df["datetime"] = pd.to_datetime(df["datetime"])
+    df["list_date"] = pd.to_datetime(df["list_date"])
+    trade_calendar["calendar_date"] = pd.to_datetime(trade_calendar["calendar_date"])
+
+    # Filter only open market days
+    trading_days = trade_calendar[trade_calendar["is_open"] == 1].copy()
+    trading_days = trading_days.sort_values("calendar_date").reset_index(drop=True)
+    trading_days["date_idx"] = trading_days.index  # 0,1,2,... for open days only
+
+    # Create mapping: date → index among open market days
+    date_to_idx = pd.Series(
+        trading_days["date_idx"].values, index=trading_days["calendar_date"]
+    )
+
+    # ────────────────────────────────────────────────
+    # Prepare df: only keep rows where stock actually traded
+    # ────────────────────────────────────────────────
+    df = df.sort_values(["symbol", "datetime"])
+
+    # Map each traded date to its open-day index
+    df["date_idx"] = df["datetime"].map(date_to_idx)
+
+    # Remove rows where traded date is not in open calendar (data error)
+    df = df.dropna(subset=["date_idx"]).copy()
+    df["date_idx"] = df["date_idx"].astype(int)
+
+    # ────────────────────────────────────────────────
+    # 1. list_days: count of open market days since (and including) list_date
+    # ────────────────────────────────────────────────
+    # For each symbol, find the open_idx of its list_date
+    df["list_date_idx"] = (
+        df.groupby("symbol")["list_date"].transform("first").map(date_to_idx)
+    )
+    df["list_days"] = df["date_idx"] - df["list_date_idx"] + 1
+
+    # ────────────────────────────────────────────────
+    # 2. Gap detection using open_idx differences
+    # ────────────────────────────────────────────────
+    df["prev_date_idx"] = df.groupby("symbol")["date_idx"].shift(1)
+
+    # Gap = number of **missed open days** between two consecutive trades
+    df["gap"] = (df["date_idx"] - df["prev_date_idx"] - 1).fillna(0).astype(int)
+
+    # suspension_days = size of the previous gap (0 if continuous)
+    df["suspension_days"] = df["gap"].where(df["gap"] > 0, 0)
+
+    # ────────────────────────────────────────────────
+    # 3. Continuous trading days (resets after gap > 0)
+    # ────────────────────────────────────────────────
+    df["is_reset"] = df["gap"] > 0
+    df["segment_id"] = df.groupby("symbol")["is_reset"].cumsum()
+
+    df["continuous_trading_days"] = df.groupby(["symbol", "segment_id"]).cumcount() + 1
+
+    # ────────────────────────────────────────────────
+    # Cleanup
+    # ────────────────────────────────────────────────
+    drop_cols = ["date_idx", "prev_date_idx", "gap", "is_reset", "segment_id"]
+    drop_cols = ["prev_date_idx", "gap", "is_reset", "segment_id"]
+    drop_cols = []
+    df = df.drop(columns=drop_cols, errors="ignore")
+
+    return df

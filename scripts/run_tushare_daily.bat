@@ -21,8 +21,8 @@ call conda activate %PROJECT_ROOT%\venv\tushare
 
 :: Download
 
-echo Step: Downloading trade calendar (20120101 - %END_DATE%)...
-python -m src.vendors.tushare.cli download trade-cal --start 20120101 --end %END_DATE%
+echo Step: Downloading trade calendar (19900101 - %END_DATE%)...
+python -m src.vendors.tushare.cli download trade-cal --start 19900101 --end %END_DATE%
 
 echo Step: Downloading ticker mapper...
 python -m src.vendors.tushare.cli download ticker-mapper
