@@ -8,6 +8,7 @@ from tqdm import tqdm
 import tushare as ts
 
 from .config import TUSHARE_TOKEN, DataRawPath
+from src.logger import logger
 
 
 @lru_cache(maxsize=1)
@@ -29,7 +30,7 @@ def try_n_times(task: Callable, n: int, seconds: int, **kwargs):
             task(**kwargs)
             return True
         except Exception as e:
-            print(e)
+            logger.error(e)
             count += 1
             if count >= n:
                 return False
@@ -97,7 +98,7 @@ def download_ticker_mapper():
     ticker_mapper.to_parquet(filename)
 
 
-def _download_bar_price_for_dt(dt: pd.Timestamp, filename: Path):
+def _download_bar_for_dt(dt: pd.Timestamp, filename: Path):
     pro = get_pro()
     df = pro.daily(trade_date=convert_dt_to_str(dt))
     if df.shape[0] > 0:
@@ -105,7 +106,7 @@ def _download_bar_price_for_dt(dt: pd.Timestamp, filename: Path):
     df.to_parquet(filename)
 
 
-def download_1day_bar_price(start_date: str, end_date: str, replace: bool = False):
+def download_1day_bar(start_date: str, end_date: str, replace: bool = False):
     """
     Download 1day bar price from Tushare.
 
@@ -115,12 +116,13 @@ def download_1day_bar_price(start_date: str, end_date: str, replace: bool = Fals
     file_path = DataRawPath().bar_1day_dir
     file_path.mkdir(parents=True, exist_ok=True)
 
-    for dt in tqdm(reversed(pd.date_range(start_date, end_date, freq="B"))):
+    for dt in reversed(pd.date_range(start_date, end_date, freq="B")):
         filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
         if filename.exists() and not replace:
+            logger.info(f"{dt}: No need to download 1day bar, already exists ...")
             continue
         result = try_n_times(
-            _download_bar_price_for_dt,
+            _download_bar_for_dt,
             n=5,
             seconds=30,
             dt=dt,
@@ -128,9 +130,9 @@ def download_1day_bar_price(start_date: str, end_date: str, replace: bool = Fals
         )
 
         if result:
-            print(f"{dt}: successful ...")
+            logger.info(f"{dt}: download 1day bar successful ...")
         else:
-            print(f"{dt}: failed downloading ...")
+            logger.error(f"{dt}: download 1day bar failed downloading ...")
 
         time.sleep(1)
 
@@ -150,12 +152,13 @@ def download_adj_factor(start_date: str, end_date: str, replace: bool = False):
     The tushare API suggests download adj factor day by day.
     """
     # Create folder
-    file_path = DataRawPath().adj_dir
+    file_path = DataRawPath().adj_factor_dir
     file_path.mkdir(parents=True, exist_ok=True)
 
-    for dt in tqdm(reversed(pd.date_range(start_date, end_date, freq="B"))):
+    for dt in reversed(pd.date_range(start_date, end_date, freq="B")):
         filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
         if filename.exists() and not replace:
+            logger.info(f"{dt}: No need to download adj factor, already exists ...")
             continue
         result = try_n_times(
             _download_adj_factor_for_dt,
@@ -166,9 +169,9 @@ def download_adj_factor(start_date: str, end_date: str, replace: bool = False):
         )
 
         if result:
-            print(f"{dt}: successful ...")
+            logger.info(f"{dt}: download adj factor successful ...")
         else:
-            print(f"{dt}: failed downloading ...")
+            logger.error(f"{dt}: download adj factor failed downloading ...")
 
         time.sleep(30)
 
@@ -191,9 +194,10 @@ def download_basic(start_date: str, end_date: str, replace: bool = False):
     file_path = DataRawPath().basic_dir
     file_path.mkdir(parents=True, exist_ok=True)
 
-    for dt in tqdm(reversed(pd.date_range(start_date, end_date, freq="B"))):
+    for dt in reversed(pd.date_range(start_date, end_date, freq="B")):
         filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
         if filename.exists() and not replace:
+            logger.info(f"{dt}: No need to download basic data, already exists ...")
             continue
         result = try_n_times(
             _download_basic_for_dt,
@@ -204,8 +208,8 @@ def download_basic(start_date: str, end_date: str, replace: bool = False):
         )
 
         if result:
-            print(f"{dt}: successful ...")
+            logger.info(f"{dt}: download basic data successful ...")
         else:
-            print(f"{dt}: failed downloading ...")
+            logger.error(f"{dt}: download basic data failed ...")
 
         time.sleep(10)
