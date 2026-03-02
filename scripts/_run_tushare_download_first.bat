@@ -9,7 +9,7 @@ set "PROJECT_ROOT=%CD%"
 ::set "START_DATE=20120101"
 set "START_DATE=20260227"
 set "END_DATE=20260228"
-set "replace=False"
+set "replace=True"
 
 echo Running Tushare pipeline from %PROJECT_ROOT%
 

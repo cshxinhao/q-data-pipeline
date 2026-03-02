@@ -27,13 +27,13 @@ def try_n_times(task: Callable, n: int, seconds: int, **kwargs):
     count = 0
     while True:
         try:
-            task(**kwargs)
-            return True
+            result = task(**kwargs)
+            return result
         except Exception as e:
             logger.error(e)
             count += 1
             if count >= n:
-                return False
+                return None
             time.sleep(seconds)
 
 
@@ -98,12 +98,12 @@ def download_ticker_mapper():
     ticker_mapper.to_parquet(filename)
 
 
-def _download_bar_for_dt(dt: pd.Timestamp, filename: Path):
+def _download_bar_for_dt(dt: pd.Timestamp):
     pro = get_pro()
     df = pro.daily(trade_date=convert_dt_to_str(dt))
     if df.shape[0] > 0:
         df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
-    df.to_parquet(filename)
+    return df
 
 
 def download_1day_bar(start_date: str, end_date: str, replace: bool = False):
@@ -121,28 +121,30 @@ def download_1day_bar(start_date: str, end_date: str, replace: bool = False):
         if filename.exists() and not replace:
             logger.info(f"{dt}: No need to download 1day bar, already exists ...")
             continue
-        result = try_n_times(
+        df = try_n_times(
             _download_bar_for_dt,
             n=5,
             seconds=30,
             dt=dt,
-            filename=filename,
         )
 
-        if result:
-            logger.info(f"{dt}: download 1day bar successful ...")
-        else:
+        if df is None:
             logger.error(f"{dt}: download 1day bar failed downloading ...")
+            continue
+
+        df.to_parquet(filename)
+        logger.info(f"{dt}: download 1day bar successful ...")
 
         time.sleep(1)
 
 
-def _download_adj_factor_for_dt(dt: pd.Timestamp, filename: Path):
+def _download_adj_factor_for_dt(dt: pd.Timestamp):
     pro = get_pro()
     df = pro.adj_factor(trade_date=convert_dt_to_str(dt))
     if df.shape[0] > 0:
         df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
-    df.to_parquet(filename)
+
+    return df
 
 
 def download_adj_factor(start_date: str, end_date: str, replace: bool = False):
@@ -160,28 +162,28 @@ def download_adj_factor(start_date: str, end_date: str, replace: bool = False):
         if filename.exists() and not replace:
             logger.info(f"{dt}: No need to download adj factor, already exists ...")
             continue
-        result = try_n_times(
+        df = try_n_times(
             _download_adj_factor_for_dt,
             n=5,
             seconds=30,
             dt=dt,
-            filename=filename,
         )
-
-        if result:
-            logger.info(f"{dt}: download adj factor successful ...")
-        else:
+        if df is None:
             logger.error(f"{dt}: download adj factor failed downloading ...")
+            continue
+
+        df.to_parquet(filename)
+        logger.info(f"{dt}: download adj factor successful ...")
 
         time.sleep(30)
 
 
-def _download_basic_for_dt(dt: pd.Timestamp, filename: Path):
+def _download_basic_for_dt(dt: pd.Timestamp):
     pro = get_pro()
     df = pro.daily_basic(trade_date=convert_dt_to_str(dt))
     if df.shape[0] > 0:
         df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
-    df.to_parquet(filename)
+    return df
 
 
 def download_basic(start_date: str, end_date: str, replace: bool = False):
@@ -199,17 +201,18 @@ def download_basic(start_date: str, end_date: str, replace: bool = False):
         if filename.exists() and not replace:
             logger.info(f"{dt}: No need to download basic data, already exists ...")
             continue
-        result = try_n_times(
+        df = try_n_times(
             _download_basic_for_dt,
             n=5,
             seconds=30,
-            dt=dt,
-            filename=filename,
+            dt=dt,            
         )
 
-        if result:
-            logger.info(f"{dt}: download basic data successful ...")
-        else:
-            logger.error(f"{dt}: download basic data failed ...")
+        if df is None:
+            logger.error(f"{dt}: download basic data failed downloading ...")
+            continue
+
+        df.to_parquet(filename)
+        logger.info(f"{dt}: download basic data successful ...")
 
         time.sleep(10)
