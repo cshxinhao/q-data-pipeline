@@ -101,3 +101,6 @@ class DataCleanPath:
 
         self.cap_dir = self.base_dir / "cap" / "tushare"
         self.valuation_dir = self.base_dir / "valuation" / "tushare"
+
+        # Dataset directory
+        self.dataset_dir = self.base_dir / "dataset" / "tushare"

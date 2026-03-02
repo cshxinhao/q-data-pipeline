@@ -96,5 +96,12 @@ def clean_valuation(start, end, replace):
     cleaner.clean_valuation(start_date=start, end_date=end, replace=replace)
 
 
+@clean.command("dataset")
+@click.option("--year", required=True, help="Year (YYYY)")
+@click.option("--replace", type=bool, required=True, help="Replace existing files")
+def clean_dataset(year, replace):
+    cleaner.clean_dataset(year=year, replace=replace)
+
+
 if __name__ == "__main__":
     cli()

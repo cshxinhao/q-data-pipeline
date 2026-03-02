@@ -8,9 +8,10 @@ set "PROJECT_ROOT=%CD%"
 set "replace=True"
 
 :: Set date range for demonstration
-::set "START_DATE=20120101"
-set "START_DATE=20260227"
-set "END_DATE=20260228"
+for /f %%a in ('powershell -Command "Get-Date -Format yyyy-MM-dd"') do set TODAY=%%a
+echo %TODAY%
+set "START_DATE=%TODAY%"
+set "END_DATE=%TODAY%"
 
 echo Running Tushare pipeline from %PROJECT_ROOT%
 
@@ -55,6 +56,10 @@ python -m src.vendors.tushare.cli clean cap --start %START_DATE% --end %END_DATE
 
 echo Step: Cleaning basic info to valuation (%START_DATE% - %END_DATE%)...
 python -m src.vendors.tushare.cli clean valuation --start %START_DATE% --end %END_DATE% --replace %replace%
+
+set "YEAR=%START_DATE:~0,4%"
+echo Step: Cleaning dataset (%YEAR%)...
+python -m src.vendors.tushare.cli clean dataset --year %YEAR% --replace %replace%
 
 
 echo Tushare pipeline completed.

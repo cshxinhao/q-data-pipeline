@@ -1,5 +1,5 @@
 import pandas as pd
-from tqdm import tqdm
+from pathlib import Path
 
 from src.logger import logger
 from .config import (
@@ -64,6 +64,7 @@ def clean_identity():
     )
     df["list_date"] = pd.to_datetime(df["list_date"])
     df["delist_date"] = pd.to_datetime(df["delist_date"])
+    df["delist_date"] = df["delist_date"].where(~df["delist_date"].isna(), "2099-12-31")
 
     df = df.reindex(columns=REQ_IDENTITY_FIELDS)
     df.to_parquet(output_filename)
@@ -274,3 +275,100 @@ def clean_valuation(start_date: str, end_date: str, replace: bool = False):
     for dt in dates:
         _clean_valuation_for_dt(dt, replace=replace)
         logger.info(f"{dt}: clean valuation data done ...")
+
+
+# Dataset: concat to dataset and clean
+
+
+def _load_parquets_under_directory(directory: Path, start_date: str, end_date: str):
+    ls = []
+    for filename in directory.glob("*.parquet"):
+        # To skip the files that are not in the date range
+        if pd.Timestamp(filename.stem) < pd.Timestamp(start_date) or pd.Timestamp(
+            filename.stem
+        ) > pd.Timestamp(end_date):
+            continue
+
+        df = pd.read_parquet(filename)
+        if not df.empty:
+            ls.append(df)
+
+    return pd.concat(ls, axis=0)
+
+
+def clean_dataset(year: int, replace: bool = False):
+
+    start_date = pd.Timestamp(f"{year}-01-01").strftime("%Y-%m-%d")
+    end_date = pd.Timestamp(f"{year}-12-31").strftime("%Y-%m-%d")
+
+    # Path and filename
+    output_filename = DataCleanPath().dataset_dir / f"{year}.parquet"
+    output_filename.parent.mkdir(parents=True, exist_ok=True)
+
+    if not replace and output_filename.exists():
+        return True
+
+    # Load data
+    logger.info(
+        f"Before concatenating dataset, load components from {start_date} to {end_date} ..."
+    )
+    trade_calendar = pd.read_parquet(
+        DataCleanPath().trade_calendar_dir / "trade_calendar.parquet"
+    ).sort_values(by="calendar_date")
+    identity = pd.read_parquet(
+        DataCleanPath().identity_dir / "identity.parquet"
+    ).sort_values(by="symbol")
+    unadj_1d_bar = _load_parquets_under_directory(
+        DataCleanPath().bar_1day_dir, start_date, end_date
+    ).sort_values(["datetime", "symbol"])
+    adj_factor = _load_parquets_under_directory(
+        DataCleanPath().adj_factor_dir, start_date, end_date
+    ).sort_values(["datetime", "symbol"])
+    cap = _load_parquets_under_directory(
+        DataCleanPath().cap_dir, start_date, end_date
+    ).sort_values(["datetime", "symbol"])
+    valuation = _load_parquets_under_directory(
+        DataCleanPath().valuation_dir, start_date, end_date
+    ).sort_values(["datetime", "symbol"])
+
+    # Concat
+    trade_dates = trade_calendar.query("is_open == 1")["calendar_date"].to_list()
+    dataset = (
+        pd.concat(
+            [
+                unadj_1d_bar.loc[unadj_1d_bar["datetime"].isin(trade_dates)].set_index(
+                    ["datetime", "symbol"]
+                ),
+                adj_factor.loc[adj_factor["datetime"].isin(trade_dates)].set_index(
+                    ["datetime", "symbol"]
+                ),
+                cap.loc[cap["datetime"].isin(trade_dates)].set_index(
+                    ["datetime", "symbol"]
+                ),
+                valuation.loc[valuation["datetime"].isin(trade_dates)].set_index(
+                    ["datetime", "symbol"]
+                ),
+            ],
+            axis=1,
+            join="inner",
+        )
+        .sort_index()
+        .reset_index()
+    )
+    dataset = pd.merge(
+        dataset,
+        identity,
+        on="symbol",
+        how="left",
+    ).query("datetime >= list_date and datetime <= delist_date")
+
+    # Adjust the bar
+    dataset["open"] = dataset["open"] * dataset["adj_factor"]
+    dataset["high"] = dataset["high"] * dataset["adj_factor"]
+    dataset["low"] = dataset["low"] * dataset["adj_factor"]
+    dataset["close"] = dataset["close"] * dataset["adj_factor"]
+    dataset["vwap"] = dataset["vwap"] * dataset["adj_factor"]
+
+    dataset.to_parquet(output_filename)
+    logger.info(f"Done cleaning dataset from {start_date} to {end_date}")
+    return True
