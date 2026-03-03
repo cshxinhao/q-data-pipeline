@@ -14,14 +14,20 @@ def download():
     pass
 
 
-@download.command("trade-cal")
-@click.argument("--start", type=str, help="Start date (YYYYMMDD)")
-@click.argument("--end", type=str, help="End date (YYYYMMDD)")
-def download_trade_calendar(start: str, end: str):
+@download.command("holiday")
+def download_holiday():
     """
-    Download trade calendar from XTQuant.
+    Download holiday calendar from XTQuant.
     """
-    downloader.download_trade_calendar(start, end)
+    downloader.download_holiday()
+
+
+@download.command("index-weight")
+def download_index_weight():
+    """
+    Download index weight from XTQuant.
+    """
+    downloader.download_index_weight()
 
 
 @cli.group()
