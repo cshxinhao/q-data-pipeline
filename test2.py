@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     df = xtdata.get_market_data_ex(
         stock_list=code_list[:10],
-        period="transactioncount1m",
+        period="1d",
         count=10,
     )
     print(df)

@@ -8,7 +8,8 @@ simplejson
 click
 python-dotenv
 
-xtquant==241014.1.2  # Core package for XTQuant
+xtquant
+#xtquant==241014.1.2  # Core package for XTQuant
 
 # If using Redis for upgrade
 redis  # For better memory management

@@ -32,6 +32,18 @@ REQ_1D_BAR_FIELDS = [
     "amount",
 ]
 
+REQ_1MIN_BAR_FIELDS = [
+    "datetime",
+    "symbol",
+    "open",
+    "high",
+    "low",
+    "close",
+    "vwap",
+    "volume",
+    "amount",
+]
+
 REQ_ADJ_FACTOR_FIELDS = [
     "datetime",
     "symbol",

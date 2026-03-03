@@ -1,7 +1,8 @@
 import click
-import pandas as pd
-from xtquant import xtdata
-from . import downloader
+from . import downloader, cleaner
+from src.logger import setup_logger
+
+logger = setup_logger("xtquant-cli")
 
 
 @click.group()
@@ -14,12 +15,30 @@ def download():
     pass
 
 
-@download.command("holiday")
-def download_holiday():
+@download.command("contracts")
+def download_contracts():
     """
-    Download holiday calendar from XTQuant.
+    Download expired (delisted) contracts from XTQuant.
     """
-    downloader.download_holiday()
+    try:
+        downloader.download_contracts()
+    except Exception as e:
+            logger.error(f"Error downloading contracts: {e}")
+            raise e
+    logger.info("Contracts downloaded.")
+
+
+@download.command("sector-data")
+def download_sector_data():
+    """
+    Download sector data from XTQuant.
+    """
+    try:
+        downloader.download_sector_data()
+    except Exception as e:
+            logger.error(f"Error downloading sector data: {e}")
+            raise e
+    logger.info("Sector data downloaded.")
 
 
 @download.command("index-weight")
@@ -27,12 +46,86 @@ def download_index_weight():
     """
     Download index weight from XTQuant.
     """
-    downloader.download_index_weight()
+    try:
+        downloader.download_index_weight()
+    except Exception as e:
+            logger.error(f"Error downloading index weight: {e}")
+            raise e
+    logger.info("Index weight downloaded.")
+
+
+@download.command("bar")
+def download_bar():
+    """
+    Download bar data from XTQuant.
+    """
+    try:
+        downloader.download_1day_bar()
+        downloader.download_1min_bar()
+    except Exception as e:
+            logger.error(f"Error downloading bar data: {e}")
+            raise e
+    logger.info("1day & 1min Bar data downloaded.")
+
+
+@download.command("financial")
+def download_financial():
+    """
+    Download financial data from XTQuant.
+    """
+    try:
+        downloader.download_financial()
+    except Exception as e:
+            logger.error(f"Error downloading financial data: {e}")
+            raise e
+    logger.info("Financial data downloaded.")
 
 
 @cli.group()
 def clean():
     pass
+
+
+@clean.command("trade-cal")
+def clean_trade_calendar():
+    """
+    Clean trade calendar from XTQuant.
+    """
+    try:
+        cleaner.clean_trade_calendar()
+    except Exception as e:
+            logger.error(f"Error cleaning trade calendar: {e}")
+            raise e
+    logger.info("Trade calendar cleaned.")
+
+
+@clean.command("identity")
+def clean_identity():
+    """
+    Clean identity from XTQuant.
+    """
+    try:
+        cleaner.clean_identity()
+    except Exception as e:
+            logger.error(f"Error cleaning identity: {e}")
+            raise e
+    logger.info("Identity cleaned.")
+
+
+@clean.command("1day-bar")
+@click.option("--start", required=True, help="Start date (YYYYMMDD)")
+@click.option("--end", required=True, help="End date (YYYYMMDD)")
+@click.option("--replace", type=bool, required=True, help="Replace existing files")
+def clean_1day_bar(start: str, end: str, replace: bool):
+    """
+    Clean 1day bar from XTQuant.
+    """
+    try:
+        cleaner.clean_1day_bar(start, end, replace)
+    except Exception as e:
+            logger.error(f"Error cleaning 1day bar: {e}")
+            raise e
+    logger.info("1day bar cleaned.")
 
 
 if __name__ == "__main__":
