@@ -7,4 +7,11 @@ lxml
 simplejson
 click
 python-dotenv
+
 xtquant
+#xtquant==241014.1.2  # Core package for XTQuant
+
+# If using Redis for upgrade
+redis  # For better memory management
+prometheus_client  # For better monitoring
+structlog  # For better logging

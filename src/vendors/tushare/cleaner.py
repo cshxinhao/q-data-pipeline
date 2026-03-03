@@ -38,7 +38,7 @@ def clean_trade_calendar():
     df["pre_trade_date"] = pd.to_datetime(df["pre_trade_date"])
 
     df = df[REQ_TRADE_CALENDAR_FIELDS]
-    df.to_parquet(output_filename)
+    df.to_parquet(output_filename, index=False)
     return True
 
 
@@ -79,7 +79,7 @@ def clean_identity():
     )
 
     df = df.reindex(columns=REQ_IDENTITY_FIELDS)
-    df.to_parquet(output_filename)
+    df.to_parquet(output_filename, index=False)
     return True
 
 
@@ -88,9 +88,7 @@ def _clean_1day_bar_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     Clean 1day bar data (downloaded by date) from Tushare.
     """
 
-    output_filename = (
-        DataCleanPath().bar_1day / f"{dt.strftime('%Y-%m-%d')}.parquet"
-    )
+    output_filename = DataCleanPath().bar_1day / f"{dt.strftime('%Y-%m-%d')}.parquet"
 
     if not replace and output_filename.exists():
         return True
@@ -127,7 +125,7 @@ def _clean_1day_bar_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     # Extract required fields
     df = df.reindex(columns=REQ_1D_BAR_FIELDS)
 
-    df.to_parquet(output_filename)
+    df.to_parquet(output_filename, index=False)
     return True
 
 
@@ -142,9 +140,7 @@ def _clean_adj_factor_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     """
     Clean adj factor data (downloaded by date) from Tushare.
     """
-    output_filename = (
-        DataCleanPath().adj_factor / f"{dt.strftime('%Y-%m-%d')}.parquet"
-    )
+    output_filename = DataCleanPath().adj_factor / f"{dt.strftime('%Y-%m-%d')}.parquet"
 
     if not replace and output_filename.exists():
         return True
@@ -172,8 +168,8 @@ def _clean_adj_factor_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
 
     # Extract required fields
     df = df.reindex(columns=REQ_ADJ_FACTOR_FIELDS)
-    
-    df.to_parquet(output_filename)
+
+    df.to_parquet(output_filename, index=False)
     return True
 
 
@@ -229,7 +225,7 @@ def _clean_cap_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     # Extract required fields
     df = df.reindex(columns=REQ_CAP_FIELDS)
 
-    df.to_parquet(output_filename)
+    df.to_parquet(output_filename, index=False)
     return True
 
 
@@ -244,9 +240,7 @@ def _clean_valuation_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     """
     Clean valuation data (downloaded by date) from Tushare.
     """
-    output_filename = (
-        DataCleanPath().valuation / f"{dt.strftime('%Y-%m-%d')}.parquet"
-    )
+    output_filename = DataCleanPath().valuation / f"{dt.strftime('%Y-%m-%d')}.parquet"
 
     if not replace and output_filename.exists():
         return True
@@ -274,7 +268,7 @@ def _clean_valuation_for_dt(dt: pd.Timestamp, replace: bool = False) -> bool:
     # Extract required fields
     df = df.reindex(columns=REQ_VALUATION_FIELDS)
 
-    df.to_parquet(output_filename)
+    df.to_parquet(output_filename, index=False)
     return True
 
 
@@ -374,7 +368,7 @@ def clean_dataset(year: int, replace: bool = False):
     dataset["close"] = dataset["close"] * dataset["adj_factor"]
     dataset["vwap"] = dataset["vwap"] * dataset["adj_factor"]
 
-    dataset.to_parquet(output_filename)
+    dataset.to_parquet(output_filename, index=False)
     logger.info(f"Done cleaning dataset from {start_date} to {end_date}")
     return True
 
@@ -403,7 +397,9 @@ def clean_listed_days():
     )
 
     df_day_count = _add_day_count_columns(dataset, trade_calendar)
-    df_day_count.to_parquet(DataCleanPath().listed_days / "listed_days.parquet")
+    df_day_count.to_parquet(
+        DataCleanPath().listed_days / "listed_days.parquet", index=False
+    )
 
 
 def _add_day_count_columns(

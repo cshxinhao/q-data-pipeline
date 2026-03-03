@@ -61,7 +61,7 @@ def download_trade_calendar(start_date: str, end_date: str):
 
     # Save
     filename = DataRawPath().trade_calendar / "trade_calendar.parquet"
-    trade_calendar.to_parquet(filename)
+    trade_calendar.to_parquet(filename, index=False)
 
 
 def download_ticker_mapper():
@@ -95,7 +95,7 @@ def download_ticker_mapper():
 
     # To save
     filename = DataRawPath().ticker_mapper / "ticker_mapper.parquet"
-    ticker_mapper.to_parquet(filename)
+    ticker_mapper.to_parquet(filename, index=False)
 
 
 def _download_bar_for_dt(dt: pd.Timestamp):
@@ -131,7 +131,7 @@ def download_1day_bar(start_date: str, end_date: str, replace: bool = False):
             logger.error(f"{dt}: download 1day bar failed downloading ...")
             continue
 
-        df.to_parquet(filename)
+        df.to_parquet(filename, index=False)
         logger.info(f"{dt}: download 1day bar successful ...")
 
         time.sleep(1)
@@ -170,7 +170,7 @@ def download_adj_factor(start_date: str, end_date: str, replace: bool = False):
             logger.error(f"{dt}: download adj factor failed downloading ...")
             continue
 
-        df.to_parquet(filename)
+        df.to_parquet(filename, index=False)
         logger.info(f"{dt}: download adj factor successful ...")
 
         time.sleep(30)
@@ -209,7 +209,7 @@ def download_basic(start_date: str, end_date: str, replace: bool = False):
             logger.error(f"{dt}: download basic data failed downloading ...")
             continue
 
-        df.to_parquet(filename)
+        df.to_parquet(filename, index=False)
         logger.info(f"{dt}: download basic data successful ...")
 
         time.sleep(10)
