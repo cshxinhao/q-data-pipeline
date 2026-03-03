@@ -6,4 +6,3 @@ lxml
 simplejson
 click
 python-dotenv
-tushare

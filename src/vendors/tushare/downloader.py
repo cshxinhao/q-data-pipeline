@@ -8,6 +8,7 @@ from tqdm import tqdm
 import tushare as ts
 
 from .config import TUSHARE_TOKEN, DataRawPath
+from src.logger import logger
 
 
 @lru_cache(maxsize=1)
@@ -26,13 +27,13 @@ def try_n_times(task: Callable, n: int, seconds: int, **kwargs):
     count = 0
     while True:
         try:
-            task(**kwargs)
-            return True
+            result = task(**kwargs)
+            return result
         except Exception as e:
-            print(e)
+            logger.error(e)
             count += 1
             if count >= n:
-                return False
+                return None
             time.sleep(seconds)
 
 
@@ -59,7 +60,7 @@ def download_trade_calendar(start_date: str, end_date: str):
     trade_calendar.sort_values(by="cal_date", inplace=True)
 
     # Save
-    filename = DataRawPath().trade_calendar_dir / "trade_calendar.parquet"
+    filename = DataRawPath().trade_calendar / "trade_calendar.parquet"
     trade_calendar.to_parquet(filename)
 
 
@@ -93,54 +94,56 @@ def download_ticker_mapper():
     ticker_mapper["delist_date"] = pd.to_datetime(ticker_mapper.loc[:, "delist_date"])
 
     # To save
-    filename = DataRawPath().ticker_mapper_dir / "ticker_mapper.parquet"
+    filename = DataRawPath().ticker_mapper / "ticker_mapper.parquet"
     ticker_mapper.to_parquet(filename)
 
 
-def _download_bar_price_for_dt(dt: pd.Timestamp, filename: Path):
+def _download_bar_for_dt(dt: pd.Timestamp):
     pro = get_pro()
     df = pro.daily(trade_date=convert_dt_to_str(dt))
     if df.shape[0] > 0:
         df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
-    df.to_parquet(filename)
+    return df
 
 
-def download_1day_bar_price(start_date: str, end_date: str, replace: bool = False):
+def download_1day_bar(start_date: str, end_date: str, replace: bool = False):
     """
     Download 1day bar price from Tushare.
 
     The tushare API suggests download bar day by day.
     """
     # Create folder
-    file_path = DataRawPath().bar_1day_dir
-    file_path.mkdir(parents=True, exist_ok=True)
+    file_path = DataRawPath().bar_1day
 
-    for dt in tqdm(reversed(pd.date_range(start_date, end_date, freq="B"))):
+    for dt in reversed(pd.date_range(start_date, end_date, freq="B")):
         filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
         if filename.exists() and not replace:
+            logger.info(f"{dt}: No need to download 1day bar, already exists ...")
             continue
-        result = try_n_times(
-            _download_bar_price_for_dt,
+        df = try_n_times(
+            _download_bar_for_dt,
             n=5,
             seconds=30,
             dt=dt,
-            filename=filename,
         )
 
-        if result:
-            print(f"{dt}: successful ...")
-        else:
-            print(f"{dt}: failed downloading ...")
+        if df is None:
+            logger.error(f"{dt}: download 1day bar failed downloading ...")
+            continue
+
+        df.to_parquet(filename)
+        logger.info(f"{dt}: download 1day bar successful ...")
 
         time.sleep(1)
 
 
-def _download_adj_factor_for_dt(dt: pd.Timestamp, filename: Path):
+def _download_adj_factor_for_dt(dt: pd.Timestamp):
     pro = get_pro()
     df = pro.adj_factor(trade_date=convert_dt_to_str(dt))
     if df.shape[0] > 0:
         df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
-    df.to_parquet(filename)
+
+    return df
 
 
 def download_adj_factor(start_date: str, end_date: str, replace: bool = False):
@@ -150,35 +153,35 @@ def download_adj_factor(start_date: str, end_date: str, replace: bool = False):
     The tushare API suggests download adj factor day by day.
     """
     # Create folder
-    file_path = DataRawPath().adj_dir
-    file_path.mkdir(parents=True, exist_ok=True)
+    file_path = DataRawPath().adj_factor
 
-    for dt in tqdm(reversed(pd.date_range(start_date, end_date, freq="B"))):
+    for dt in reversed(pd.date_range(start_date, end_date, freq="B")):
         filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
         if filename.exists() and not replace:
+            logger.info(f"{dt}: No need to download adj factor, already exists ...")
             continue
-        result = try_n_times(
+        df = try_n_times(
             _download_adj_factor_for_dt,
             n=5,
             seconds=30,
             dt=dt,
-            filename=filename,
         )
+        if df is None:
+            logger.error(f"{dt}: download adj factor failed downloading ...")
+            continue
 
-        if result:
-            print(f"{dt}: successful ...")
-        else:
-            print(f"{dt}: failed downloading ...")
+        df.to_parquet(filename)
+        logger.info(f"{dt}: download adj factor successful ...")
 
         time.sleep(30)
 
 
-def _download_basic_for_dt(dt: pd.Timestamp, filename: Path):
+def _download_basic_for_dt(dt: pd.Timestamp):
     pro = get_pro()
     df = pro.daily_basic(trade_date=convert_dt_to_str(dt))
     if df.shape[0] > 0:
         df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
-    df.to_parquet(filename)
+    return df
 
 
 def download_basic(start_date: str, end_date: str, replace: bool = False):
@@ -188,24 +191,25 @@ def download_basic(start_date: str, end_date: str, replace: bool = False):
     The tushare API suggests download basic data day by day.
     """
     # Create folder
-    file_path = DataRawPath().basic_dir
-    file_path.mkdir(parents=True, exist_ok=True)
+    file_path = DataRawPath().basic
 
-    for dt in tqdm(reversed(pd.date_range(start_date, end_date, freq="B"))):
+    for dt in reversed(pd.date_range(start_date, end_date, freq="B")):
         filename = file_path / f"{dt.strftime('%Y-%m-%d')}.parquet"
         if filename.exists() and not replace:
+            logger.info(f"{dt}: No need to download basic data, already exists ...")
             continue
-        result = try_n_times(
+        df = try_n_times(
             _download_basic_for_dt,
             n=5,
             seconds=30,
-            dt=dt,
-            filename=filename,
+            dt=dt,            
         )
 
-        if result:
-            print(f"{dt}: successful ...")
-        else:
-            print(f"{dt}: failed downloading ...")
+        if df is None:
+            logger.error(f"{dt}: download basic data failed downloading ...")
+            continue
+
+        df.to_parquet(filename)
+        logger.info(f"{dt}: download basic data successful ...")
 
         time.sleep(10)

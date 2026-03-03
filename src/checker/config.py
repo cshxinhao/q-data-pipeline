@@ -1,0 +1,10 @@
+from pathlib import Path
+
+
+class CheckerReportPath:
+    def __init__(self, vendor: str = "tushare"):
+        self.base_dir = Path(r"D:\data_warehouse\vendor_check_report") / vendor
+
+    def _ensure_dir(self, path: Path):
+        path.mkdir(parents=True, exist_ok=True)
+        return path

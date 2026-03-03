@@ -1,0 +1,10 @@
+polars
+pandas
+pyarrow
+tqdm
+requests
+lxml
+simplejson
+click
+python-dotenv
+xtquant
