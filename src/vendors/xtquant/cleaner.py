@@ -1,6 +1,7 @@
 import warnings
 
 import pandas as pd
+from xtquant.xtdata import get_local_data, get_market_data_ex
 from src.logger import logger
 from src.common.schema import (
     REQ_1D_BAR_FIELDS,
@@ -131,6 +132,57 @@ def clean_1day_bar(start_date: str, end_date: str, replace: bool = False):
     for dt in dates:
         _clean_1day_bar_for_dt(dt, replace=replace)
         logger.info(f"{dt}: clean 1day bar data done ...")
+
+
+def _clean_1min_bar_for_dt(dt: pd.Timestamp, replace: bool = False):
+    """
+    Clean 1min bar data from XTQuant.
+    """
+
+    output_filename = DataCleanPath().bar_1min / f"{dt.strftime('%Y-%m-%d')}.parquet"
+
+    if not replace and output_filename.exists():
+        return True
+
+    # Load data
+    code_list = xtdata.get_stock_list_in_sector("沪深A股")
+    data = xtdata.get_market_data_ex(
+        stock_list=code_list,
+        period="1m",
+        start_time=convert_dt_to_str(dt),
+        end_time=convert_dt_to_str(dt),
+    )
+    df = pd.concat(data, axis=0).rename_axis(index=["symbol", "date"]).reset_index()
+
+    # # Test
+    # data = xtdata.get_market_data_ex(stock_list=['600519.SH', '300750.SZ'], period="1m")
+    # data = xtdata.get_market_data(stock_list=['600519.SH', '300750.SZ'], period="1m")
+    # data = xtdata.get_local_data(stock_list=['600519.SH', '300750.SZ'], period="1m")
+
+    # Beijing is UTC+8
+    df["datetime"] = pd.to_datetime(df["time"], unit="ms") + pd.offsets.Hour(8)
+
+    # Align column names
+    # df = df.rename(columns={})
+
+    # Unit
+    df["volume"] *= 100
+
+    # Add columns
+    df["vwap"] = df["amount"] / df["volume"]
+
+    # Exrtact required fields
+    df = df.reindex(columns=REQ_1D_BAR_FIELDS)
+
+    df.to_parquet(output_filename, index=False)
+    return True
+
+
+def clean_1min_bar(start_date: str, end_date: str, replace: bool = False):
+    dates = pd.date_range(start=start_date, end=end_date, freq="B")
+    for dt in dates:
+        _clean_1min_bar_for_dt(dt, replace=replace)
+        logger.info(f"{dt}: clean 1min bar data done ...")
 
 
 def clean_real_time_quote(date: str):

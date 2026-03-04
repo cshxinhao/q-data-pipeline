@@ -28,7 +28,8 @@ q-data-pipeline/
 │   └── logger.py       # Logging configuration
 ├── scripts/            # Shell and Batch scripts for automation
 ├── requirements/       # Dependency files for different environments
-└── tests/              # Unit and integration tests
+├── tests/              # Unit and integration tests
+└── cli.py              # Unified Command Line Interface
 ```
 
 ## Getting Started
@@ -84,23 +85,23 @@ q-data-pipeline/
 
 ## Usage
 
-The project uses command-line interfaces (CLI) for different modules. You can run them as Python modules or use the provided scripts.
+The project uses a unified command-line interface (CLI) `cli.py` for managing data from different vendors.
 
 ### Tushare
 
 **Downloading Data:**
 ```bash
 # Download daily bars for a specific date range
-python -m src.vendors.tushare.cli download 1day-bar --start 20230101 --end 20231231 --replace true
+python cli.py tushare download 1day-bar --start 20230101 --end 20231231 --replace true
 
 # Download trade calendar
-python -m src.vendors.tushare.cli download trade-cal --start 20230101 --end 20231231
+python cli.py tushare download trade-cal --start 20230101 --end 20231231
 ```
 
 **Cleaning Data:**
 ```bash
 # Clean trade calendar
-python -m src.vendors.tushare.cli clean trade-cal
+python cli.py tushare clean trade-cal
 ```
 
 **Using Scripts:**
@@ -113,10 +114,10 @@ Convenience scripts are located in the `scripts/` directory:
 **Downloading Data:**
 ```bash
 # Download sector data
-python -m src.vendors.xtquant.cli download sector-data
+python cli.py xtquant download sector-data
 
 # Download 1-day and 1-min bars
-python -m src.vendors.xtquant.cli download bar
+python cli.py xtquant download bar
 ```
 
 ### Data Validation (Checker)

@@ -128,6 +128,22 @@ def clean_1day_bar(start: str, end: str, replace: bool):
     logger.info(f"1day bar cleaned for {start} to {end}.")
 
 
+@clean.command("1min-bar")
+@click.option("--start", required=True, help="Start date (YYYYMMDD)")
+@click.option("--end", required=True, help="End date (YYYYMMDD)")
+@click.option("--replace", type=bool, required=True, help="Replace existing files")
+def clean_1min_bar(start: str, end: str, replace: bool):
+    """
+    Clean 1min bar from XTQuant.
+    """
+    try:
+        cleaner.clean_1min_bar(start, end, replace)
+    except Exception as e:
+        logger.error(f"Error cleaning 1min bar: {e}")
+        raise e
+    logger.info(f"1min bar cleaned for {start} to {end}.")
+
+
 @clean.command("realtime-quote")
 @click.option("--date", required=True, help="Date (YYYYMMDD)")
 def clean_real_time_quote(date: str):
