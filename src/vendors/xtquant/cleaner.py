@@ -4,10 +4,11 @@ import pandas as pd
 from src.logger import logger
 from src.common.schema import (
     REQ_1D_BAR_FIELDS,
+    REQ_TICK_QUOTE_FIELDS,
     REQ_TRADE_CALENDAR_FIELDS,
     REQ_IDENTITY_FIELDS,
 )
-from src.vendors.xtquant.config import DataCleanPath
+from src.vendors.xtquant.config import DataRealtimePath, DataCleanPath
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", category=UserWarning)
@@ -70,7 +71,7 @@ def clean_identity():
     )
 
     df["list_date"] = pd.to_datetime(df["list_date"])
-    df['delist_date'] = df['delist_date'].map({'99999999': '2099-12-31'})
+    df["delist_date"] = df["delist_date"].map({"99999999": "2099-12-31"})
     df["delist_date"] = pd.to_datetime(df["delist_date"])
     df["delist_date"] = df["delist_date"].where(~df["delist_date"].isna(), "2099-12-31")
 
@@ -130,3 +131,91 @@ def clean_1day_bar(start_date: str, end_date: str, replace: bool = False):
     for dt in dates:
         _clean_1day_bar_for_dt(dt, replace=replace)
         logger.info(f"{dt}: clean 1day bar data done ...")
+
+
+def clean_real_time_quote(date: str):
+    """
+    Clean real-time quote data from XTQuant.
+    """
+    date_str = pd.Timestamp(date).strftime("%Y%m%d")
+    input_path = DataRealtimePath().reatime_quote / date_str
+    output_filename = DataCleanPath().reatime_quote / f"{date_str}.parquet"
+
+    df = pd.read_parquet(
+        input_path,  # All the parquet files under this path
+        columns=[
+            "stock_code",
+            "time",
+            "lastPrice",
+            "pvolume",
+            "lastClose",
+            "stockStatus",
+            "transactionNum",
+            "askPrice1",
+            "askPrice2",
+            "askPrice3",
+            "askPrice4",
+            "askPrice5",
+            "askVol1",
+            "askVol2",
+            "askVol3",
+            "askVol4",
+            "askVol5",
+            "bidPrice1",
+            "bidPrice2",
+            "bidPrice3",
+            "bidPrice4",
+            "bidPrice5",
+            "bidVol1",
+            "bidVol2",
+            "bidVol3",
+            "bidVol4",
+            "bidVol5",
+        ],
+    )
+    df["time"] = pd.to_datetime(df["time"], unit="ms") + pd.offsets.Hour(8)
+    df = df.sort_values(by=["time", "stock_code"])
+
+    # stockStatus: 3=continuous-session, 8=closing-auction, 5=closed, ??0,7
+
+    # Drop duplicated rows
+    df = df.drop_duplicates(keep="first")  # Drop fully duplicated rows
+
+    # Align column names
+    df = df.rename(
+        columns={
+            "stock_code": "symbol",
+            "time": "datetime",
+            "lastPrice": "last_price",
+            "pvolume": "volume",
+            "lastClose": "last_close",
+            "stockStatus": "stock_status",
+            "transactionNum": "transaction_num",
+            "askPrice1": "ask_px1",
+            "askPrice2": "ask_px2",
+            "askPrice3": "ask_px3",
+            "askPrice4": "ask_px4",
+            "askPrice5": "ask_px5",
+            "askVol1": "ask_vol1",
+            "askVol2": "ask_vol2",
+            "askVol3": "ask_vol3",
+            "askVol4": "ask_vol4",
+            "askVol5": "ask_vol5",
+            "bidPrice1": "bid_px1",
+            "bidPrice2": "bid_px2",
+            "bidPrice3": "bid_px3",
+            "bidPrice4": "bid_px4",
+            "bidPrice5": "bid_px5",
+            "bidVol1": "bid_vol1",
+            "bidVol2": "bid_vol2",
+            "bidVol3": "bid_vol3",
+            "bidVol4": "bid_vol4",
+            "bidVol5": "bid_vol5",
+        }
+    )
+
+    df = df.reindex(columns=REQ_TICK_QUOTE_FIELDS)
+
+    df.to_parquet(output_filename, index=False)
+    logger.info(f"{date_str}: clean real-time quote data done ...")
+    return True

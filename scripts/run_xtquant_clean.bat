@@ -1,24 +1,21 @@
 @echo off
 setlocal
 
-:: Get the directory of the script and change to project root (one level up)
+:: Preparation
 cd /d "%~dp0.."
 set "PROJECT_ROOT=%CD%"
+call conda activate %PROJECT_ROOT%\venv\xt
 
-set "replace=True"
-
-:: Set date range for demonstration
+:: Set params
 @REM set "START_DATE=20120101"
 set "START_DATE=20260227"
 set "END_DATE=20260228"
+set "replace=True"
+
 
 echo Running XTQuant pipeline - clean from %PROJECT_ROOT%
 
-:: Activate the env
-call conda activate %PROJECT_ROOT%\venv\xt
-
-
-:: Download
+:: Clean
 
 echo Step: Cleaning trade calendar...
 python -m src.vendors.xtquant.cli clean trade-cal

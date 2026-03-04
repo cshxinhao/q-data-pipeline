@@ -63,12 +63,14 @@ def download_1day_bar():
     ## 比如行情数据，需要通过download_history_data下载，财务数据需要通过download_financial_data下载
     ## 所以在取历史数据之前，我们需要调用数据下载接口，将数据下载到本地
 
+    callback = partial(on_progress, f"{period} bar")
+
     xtdata.download_history_data2(
         stock_list=code_list,
         period=period,
         start_time="",
         end_time="",
-        callback=partial(on_progress, f"{period} bar"),
+        callback=callback,
         incrementally=True,
     )
 
@@ -84,25 +86,43 @@ def download_1min_bar():
     ## 比如行情数据，需要通过download_history_data下载，财务数据需要通过download_financial_data下载
     ## 所以在取历史数据之前，我们需要调用数据下载接口，将数据下载到本地
 
+    callback = partial(on_progress, f"{period} bar")
+
     xtdata.download_history_data2(
         stock_list=code_list,
         period=period,
         start_time="",
         end_time="",
-        callback=partial(on_progress, f"{period} bar"),
+        callback=callback,
         incrementally=True,
     )
 
 
-def download_financial(code_list: list, callback=None):
+def download_financial():
     """
     Download financial data from XTQuant.
     """
+
+    code_list = xtdata.get_stock_list_in_sector("沪深A股")
+    callback = partial(on_progress, "financial data")
+
     xtdata.download_financial_data2(
         code_list,
-        callback=partial(on_progress, "financial data"),
+        callback=callback,
     )
 
 
 def on_progress(note: str, data: dict):
-    logger.info(f"Download {note} progress: {data}")
+    finished = data["finished"]
+    if finished <= 1000:
+        if finished % 100 == 0:
+            logger.info(f"Download {note} progress: {data}")
+            return
+    elif finished <= 10000:
+        if finished % 1000 == 0:
+            logger.info(f"Download {note} progress: {data}")
+            return
+    else:
+        if finished % 10000 == 0:
+            logger.info(f"Download {note} progress: {data}")
+            return

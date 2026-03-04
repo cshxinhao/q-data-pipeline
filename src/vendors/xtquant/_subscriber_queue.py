@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 from xtquant import xtdata
 from src.logger import setup_logger
+from src.vendors.xtquant.config import DataRealtimePath
 
 # Config
 logger = setup_logger(
@@ -15,7 +16,7 @@ logger = setup_logger(
     level="INFO",
 )
 TODAY = datetime.now().strftime("%Y%m%d")
-SAVE_DIR = Path(rf"D:\data_warehouse\vendor_realtime_subscription\xtquant\{TODAY}")
+SAVE_DIR = DataRealtimePath().reatime_quote / TODAY
 SAVE_DIR.mkdir(parents=True, exist_ok=True)
 MAX_SIZE = 200000
 BATCH_SIZE = 50000
