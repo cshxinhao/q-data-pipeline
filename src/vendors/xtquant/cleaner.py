@@ -111,6 +111,9 @@ def _clean_1day_bar_for_dt(dt: pd.Timestamp, replace: bool = False):
     # Beijing is UTC+8
     df["datetime"] = pd.to_datetime(df["time"], unit="ms") + pd.offsets.Hour(8)
 
+    # Drop records with null [open, high, low, close]
+    df = df.dropna(subset=["open", "high", "low", "close"])
+
     # Align column names
     # df = df.rename(columns={})
 

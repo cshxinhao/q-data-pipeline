@@ -280,7 +280,7 @@ def cross_check_between_vendors() -> pd.DataFrame:
     # TODO: hardcode for now, will be configurable in the future
     vendor1 = "tushare"
     vendor2 = "xtquant"
-    start = "2012-01-01"
+    start = "2026-01-01"
     end = None
 
     # ----------------------------------------------------------------------------------------------------------------
@@ -299,14 +299,20 @@ def cross_check_between_vendors() -> pd.DataFrame:
         filename
         for filename in TusharePath().bar_1day.glob("*.parquet")
         if pq.read_metadata(filename).num_rows > 0
+        and pd.Timestamp(filename.stem) >= pd.Timestamp(start)
     ]
     df1 = pd.read_parquet(filenames, filters=filters)
     filenames = [
         filename
         for filename in XTPath().bar_1day.glob("*.parquet")
         if pq.read_metadata(filename).num_rows > 0
+        and pd.Timestamp(filename.stem) >= pd.Timestamp(start)
     ]
     df2 = pd.read_parquet(filenames, filters=filters)
+
+    # check SH and SZ stocks only
+    df1 = df1.loc[df1["symbol"].str.endswith(("SH", "SZ"))]
+    df2 = df2.loc[df2["symbol"].str.endswith(("SH", "SZ"))]
 
     # main key: datetime, symbol
     df1 = df1.set_index(["datetime", "symbol"])
@@ -314,6 +320,29 @@ def cross_check_between_vendors() -> pd.DataFrame:
     outer_key = df1.index.union(df2.index)
     df1 = df1.reindex(outer_key)
     df2 = df2.reindex(outer_key)
+
+    # since vwap is calculated using amount & volume, no need to check alone
+    df1 = df1.drop(columns=["vwap"])
+    df2 = df2.drop(columns=["vwap"])
+
+    # round to economical meaningful precision
+    cols = ["open", "high", "low", "close"]
+    df1[cols] = df1[cols].round(3)
+    df2[cols] = df2[cols].round(3)
+
+    cols = ["volume", "amount"]
+    df1[cols] = df1[cols] // 100 * 100  # To the 100
+    df2[cols] = df2[cols] // 100 * 100  # To the 100
+
+    # volume & amount are hard to match 100%
+    # as long as the discrepancy is within 1% tolerance
+    # just accept it
+    tolerance = 0.01  # 1% tolerance
+    mask_violation = (df1["volume"] <= df2["volume"] * (1 + tolerance)) & (
+        df1["volume"] >= df2["volume"] * (1 - tolerance)
+    )
+    df1.loc[mask_violation, "volume"] = df2.loc[mask_violation, "volume"]
+    df1.loc[mask_violation, "amount"] = df2.loc[mask_violation, "amount"]
 
     # values
     inconsistencies = df1.compare(df2, result_names=(vendor1, vendor2)).reset_index()

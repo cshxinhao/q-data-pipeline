@@ -38,17 +38,17 @@ echo ---------------------------------------------------------------------------
 python -m src.vendors.xtquant.cli download contracts
 echo.
 
-echo ----------------------------------------------------------------------------------
-echo [STEP] Downloading Sector Data
-echo ----------------------------------------------------------------------------------
-python -m src.vendors.xtquant.cli download sector-data
-echo.
+@REM echo ----------------------------------------------------------------------------------
+@REM echo [STEP] Downloading Sector Data
+@REM echo ----------------------------------------------------------------------------------
+@REM python -m src.vendors.xtquant.cli download sector-data
+@REM echo.
 
-echo ----------------------------------------------------------------------------------
-echo [STEP] Downloading Index Weight
-echo ----------------------------------------------------------------------------------
-python -m src.vendors.xtquant.cli download index-weight
-echo.
+@REM echo ----------------------------------------------------------------------------------
+@REM echo [STEP] Downloading Index Weight
+@REM echo ----------------------------------------------------------------------------------
+@REM python -m src.vendors.xtquant.cli download index-weight
+@REM echo.
 
 echo ----------------------------------------------------------------------------------
 echo [STEP] Downloading 1-Day/1-Min Bar Prices
