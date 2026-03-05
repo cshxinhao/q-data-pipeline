@@ -35,7 +35,8 @@ class DataConsumer:
         while True:
             try:
                 # 阻塞获取数据，超时 1 秒以便检查停止信号
-                data = self.queue.get(timeout=1.0)
+                data: dict = self.queue.get(timeout=1.0)
+                data["consume_time"] = time.time()
 
                 # 检查停止信号 (None)
                 if data is None:
@@ -89,12 +90,15 @@ class DataProducer:
         :param datas: dict, key=stock_code, value=dict(fields)
         """
         logger.debug(f"Callback received {len(datas)} records")
+        receive_time = time.time()
         try:
             # 遍历全市场推送的数据
             for stock_code, tick_data in datas.items():
                 # 数据清洗与展平 (关键步骤：深拷贝字段值)
                 # 注意：xtquant 字段名可能是 'lastPrice', 'open', 'high' 等，需根据实际文档调整
                 record = serialize(stock_code, tick_data)
+                record["produce_time"] = time.time()
+                record["receive_time"] = receive_time
 
                 # 放入队列 (非阻塞，满则丢弃或报警，防止阻塞行情线程)
                 try:
