@@ -93,5 +93,19 @@ def check_logic_consistency(market: str, vendor: str):
         df.to_csv(filename, index=False)
 
 
+@check.command("cross-check")
+def cross_check_between_vendors():
+    df = validator.cross_check_between_vendors()
+    if df.empty:
+        click.echo("No cross check issue found.")
+    else:
+        filename = (
+            CheckerReportPath("cross_check").base_dir
+            / "cross_check_inconsistencies.csv"
+        )
+        click.echo(f"{len(df)} cross check issue found. Saved to {filename}")
+        df.to_csv(filename, index=False)
+
+
 if __name__ == "__main__":
     check()

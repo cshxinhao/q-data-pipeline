@@ -1,19 +1,59 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 
-:: Get the directory of the script and change to project root (one level up)
+:: ==================================================================================
+::  SCRIPT: Tushare Clean Dataset History
+::  DESC:   Cleans Tushare dataset for a range of years (History)
+:: ==================================================================================
+
 cd /d "%~dp0.."
 set "PROJECT_ROOT=%CD%"
 
-:: Activate the env
+echo.
+echo ==================================================================================
+echo  [START] Tushare Clean Dataset History
+echo  Time: %DATE% %TIME%
+echo  Root: %PROJECT_ROOT%
+echo ==================================================================================
+echo.
+
+:: ----------------------------------------------------------------------------------
+::  Configuration
+:: ----------------------------------------------------------------------------------
+set "START_YEAR=2012"
+set "END_YEAR=2026"
+
+echo [INFO] Year Range: %START_YEAR% to %END_YEAR%
+echo.
+
+:: ----------------------------------------------------------------------------------
+::  Environment
+:: ----------------------------------------------------------------------------------
+echo [INFO] Activating conda environment (tushare)...
 call conda activate %PROJECT_ROOT%\venv\tushare
-
-:: Loop from 2012 to 2026 with a step of 1
-FOR /L %%y IN (2012, 1, 2026) DO (
-    echo [LOG] Processing year: %%y
-    python -m src.vendors.tushare.cli clean dataset --year %%y --replace True
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to activate environment.
+    exit /b %errorlevel%
 )
-echo Done for ALL YEARs!
-pause
+echo.
 
+:: ----------------------------------------------------------------------------------
+::  Clean Phase (Loop)
+:: ----------------------------------------------------------------------------------
+
+FOR /L %%y IN (%START_YEAR%, 1, %END_YEAR%) DO (
+    echo ----------------------------------------------------------------------------------
+    echo [STEP] Cleaning Dataset Year: %%y
+    echo ----------------------------------------------------------------------------------
+    python -m src.vendors.tushare.cli clean dataset --year %%y --replace True
+    echo.
+)
+
+echo ==================================================================================
+echo  [DONE] Tushare Clean Dataset History Completed.
+echo  Time: %DATE% %TIME%
+echo ==================================================================================
+echo.
+
+pause
 endlocal

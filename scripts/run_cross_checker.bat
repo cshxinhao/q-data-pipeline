@@ -11,7 +11,7 @@ set "PROJECT_ROOT=%CD%"
 
 echo.
 echo ==================================================================================
-echo  [START] Tushare Checker
+echo  [START] Cross-Vendor Checker
 echo  Time: %DATE% %TIME%
 echo  Root: %PROJECT_ROOT%
 echo ==================================================================================
@@ -33,37 +33,14 @@ echo.
 :: ----------------------------------------------------------------------------------
 
 echo ----------------------------------------------------------------------------------
-echo [STEP] Checking Nulls
+echo [STEP] Checking Cross-Vendor Consistency
 echo ----------------------------------------------------------------------------------
-python -m src.checker.cli null --market China --vendor tushare
+python -m src.checker.cli cross-check
 echo.
 
-echo ----------------------------------------------------------------------------------
-echo [STEP] Checking Duplicates
-echo ----------------------------------------------------------------------------------
-python -m src.checker.cli duplicate --market China --vendor tushare
-echo.
-
-echo ----------------------------------------------------------------------------------
-echo [STEP] Checking Volume
-echo ----------------------------------------------------------------------------------
-python -m src.checker.cli volume --market China --vendor tushare
-echo.
-
-echo ----------------------------------------------------------------------------------
-echo [STEP] Checking Returns Outlier
-echo ----------------------------------------------------------------------------------
-python -m src.checker.cli returns-outlier --market China --vendor tushare
-echo.
-
-echo ----------------------------------------------------------------------------------
-echo [STEP] Checking Logic Consistency
-echo ----------------------------------------------------------------------------------
-python -m src.checker.cli logic-consistency --market China --vendor tushare
-echo.
 
 echo ==================================================================================
-echo  [DONE] Tushare Checker Completed.
+echo  [DONE] Cross-Vendor Checker Completed.
 echo  Time: %DATE% %TIME%
 echo ==================================================================================
 echo.

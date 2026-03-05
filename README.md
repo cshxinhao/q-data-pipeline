@@ -16,6 +16,15 @@
 
 - **Modular Architecture**: Clean separation of concerns with vendor-specific modules, common utilities, and a dedicated checker module.
 
+## Key Engineering Highlights
+
+This project demonstrates production-grade engineering practices suitable for quantitative research:
+
+- **High-Frequency Data Ingestion**: Uses `multiprocessing` and `Redis` queues to decouple tick data subscription from storage, ensuring zero data loss during high market activity.
+- **Efficient Storage**: Leverages **Polars** and **Parquet (ZSTD)** for high-performance I/O and compact storage of tick-level data.
+- **Complex Validation**: Implements historical exchange rules (e.g., Price Limits for STAR/ChiNext/Main Board) to ensure data quality for backtesting.
+- **Observability**: Integrated **Prometheus** metrics for monitoring queue depth and ingestion rates in real-time.
+
 ## Project Structure
 
 ```

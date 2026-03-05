@@ -1,7 +1,12 @@
 from typing import List, Union
 from datetime import date, datetime
+import pyarrow.parquet as pq
 import pandas as pd
 import numpy as np
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# Basic Check: for each vendor separately
 
 
 def check_duplicate(market: str, vendor: str) -> pd.DataFrame:
@@ -229,7 +234,7 @@ def check_returns_outlier(market: str, vendor: str) -> pd.DataFrame:
         )
 
 
-def _check_continuity(
+def __check_continuity(
     data: pd.DataFrame,
     start: Union[date, datetime],
     end: Union[date, datetime],
@@ -261,3 +266,55 @@ def _check_continuity(
             missing.append(d.isoformat())
 
     return missing
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# Advanced Check: cross-check between vendors
+
+
+def cross_check_between_vendors() -> pd.DataFrame:
+    """
+    Cross-check data between two vendors to find discrepancies.
+    """
+
+    # TODO: hardcode for now, will be configurable in the future
+    vendor1 = "tushare"
+    vendor2 = "xtquant"
+    start = "2012-01-01"
+    end = None
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # TODO: Check trade calendar
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # TODO: Check identity
+
+    # ----------------------------------------------------------------------------------------------------------------
+    # Check 1day bar
+    from src.vendors.tushare.config import DataCleanPath as TusharePath
+    from src.vendors.xtquant.config import DataCleanPath as XTPath
+
+    filters = [("datetime", ">=", pd.Timestamp(start))]
+    filenames = [
+        filename
+        for filename in TusharePath().bar_1day.glob("*.parquet")
+        if pq.read_metadata(filename).num_rows > 0
+    ]
+    df1 = pd.read_parquet(filenames, filters=filters)
+    filenames = [
+        filename
+        for filename in XTPath().bar_1day.glob("*.parquet")
+        if pq.read_metadata(filename).num_rows > 0
+    ]
+    df2 = pd.read_parquet(filenames, filters=filters)
+
+    # main key: datetime, symbol
+    df1 = df1.set_index(["datetime", "symbol"])
+    df2 = df2.set_index(["datetime", "symbol"])
+    outer_key = df1.index.union(df2.index)
+    df1 = df1.reindex(outer_key)
+    df2 = df2.reindex(outer_key)
+
+    # values
+    inconsistencies = df1.compare(df2, result_names=(vendor1, vendor2)).reset_index()
+    return inconsistencies

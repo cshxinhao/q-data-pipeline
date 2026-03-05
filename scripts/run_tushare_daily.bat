@@ -1,67 +1,132 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 
-:: Get the directory of the script and change to project root (one level up)
+:: ==================================================================================
+::  SCRIPT: Tushare Daily Pipeline
+::  DESC:   Downloads and cleans daily Tushare data (Calendar, Mapper, Bar, Factors)
+:: ==================================================================================
+
 cd /d "%~dp0.."
 set "PROJECT_ROOT=%CD%"
 
+echo.
+echo ==================================================================================
+echo  [START] Tushare Daily Pipeline
+echo  Time: %DATE% %TIME%
+echo  Root: %PROJECT_ROOT%
+echo ==================================================================================
+echo.
+
+:: ----------------------------------------------------------------------------------
+::  Configuration
+:: ----------------------------------------------------------------------------------
 set "replace=True"
 
-:: Set date range for demonstration
+:: Get Today's Date
 for /f %%a in ('powershell -Command "Get-Date -Format yyyy-MM-dd"') do set TODAY=%%a
-echo %TODAY%
 set "START_DATE=%TODAY%"
 set "END_DATE=%TODAY%"
 
-echo Running Tushare pipeline from %PROJECT_ROOT%
+echo [INFO] Date Range: %START_DATE% to %END_DATE%
+echo [INFO] Replace:    %replace%
+echo.
 
-:: Activate the env
+:: ----------------------------------------------------------------------------------
+::  Environment
+:: ----------------------------------------------------------------------------------
+echo [INFO] Activating conda environment (tushare)...
 call conda activate %PROJECT_ROOT%\venv\tushare
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to activate environment.
+    exit /b %errorlevel%
+)
+echo.
 
+:: ----------------------------------------------------------------------------------
+::  Download Phase
+:: ----------------------------------------------------------------------------------
 
-:: Download
-
-echo Step: Downloading trade calendar (19900101 - %END_DATE%)...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Downloading Trade Calendar (19900101 - %END_DATE%)
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli download trade-cal --start 19900101 --end %END_DATE%
+echo.
 
-echo Step: Downloading ticker mapper...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Downloading Ticker Mapper
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli download ticker-mapper
+echo.
 
-echo Step: Downloading 1-day bar prices (%START_DATE% - %END_DATE%)...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Downloading 1-Day Bar Prices (%START_DATE% - %END_DATE%)
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli download 1day-bar --start %START_DATE% --end %END_DATE% --replace %replace%
+echo.
 
-echo Step: Downloading adj factor (%START_DATE% - %END_DATE%)...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Downloading Adj Factor (%START_DATE% - %END_DATE%)
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli download adj-factor --start %START_DATE% --end %END_DATE% --replace %replace%
+echo.
 
-echo Step: Downloading basic (%START_DATE% - %END_DATE%)...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Downloading Basic Info (%START_DATE% - %END_DATE%)
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli download basic --start %START_DATE% --end %END_DATE% --replace %replace%
+echo.
 
+:: ----------------------------------------------------------------------------------
+::  Clean Phase
+:: ----------------------------------------------------------------------------------
 
-:: Clean
-
-echo Step: Cleaning trade calendar...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Cleaning Trade Calendar
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli clean trade-cal
+echo.
 
-echo Step: Cleaning identity...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Cleaning Identity
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli clean identity
+echo.
 
-echo Step: Cleaning 1-day bar prices (%START_DATE% - %END_DATE%)...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Cleaning 1-Day Bar Prices (%START_DATE% - %END_DATE%)
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli clean 1day-bar --start %START_DATE% --end %END_DATE% --replace %replace%
+echo.
 
-echo Step: Cleaning adj factor (%START_DATE% - %END_DATE%)...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Cleaning Adj Factor (%START_DATE% - %END_DATE%)
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli clean adj-factor --start %START_DATE% --end %END_DATE% --replace %replace%
+echo.
 
-echo Step: Cleaning basic info to cap (%START_DATE% - %END_DATE%)...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Cleaning Basic Info to Cap (%START_DATE% - %END_DATE%)
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli clean cap --start %START_DATE% --end %END_DATE% --replace %replace%
+echo.
 
-echo Step: Cleaning basic info to valuation (%START_DATE% - %END_DATE%)...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Cleaning Basic Info to Valuation (%START_DATE% - %END_DATE%)
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli clean valuation --start %START_DATE% --end %END_DATE% --replace %replace%
+echo.
 
 set "YEAR=%START_DATE:~0,4%"
-echo Step: Cleaning dataset (%YEAR%)...
+echo ----------------------------------------------------------------------------------
+echo [STEP] Cleaning Dataset (%YEAR%)
+echo ----------------------------------------------------------------------------------
 python -m src.vendors.tushare.cli clean dataset --year %YEAR% --replace %replace%
+echo.
 
-
-echo Tushare pipeline completed.
+echo ==================================================================================
+echo  [DONE] Tushare Daily Pipeline Completed.
+echo  Time: %DATE% %TIME%
+echo ==================================================================================
+echo.
 
 endlocal
