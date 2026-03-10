@@ -201,6 +201,9 @@ def clean_real_time_quote(date: str):
         columns=[
             "stock_code",
             "time",
+            "produce_time",
+            "receive_time",
+            "consume_time",
             "lastPrice",
             "pvolume",
             "lastClose",
@@ -228,7 +231,8 @@ def clean_real_time_quote(date: str):
             "bidVol5",
         ],
     )
-    df["time"] = pd.to_datetime(df["time"], unit="ms") + pd.offsets.Hour(8)
+    for col in ['time', 'produce_time', 'receive_time', 'consume_time']:
+        df[col] = pd.to_datetime(df[col], unit="ms") + pd.offsets.Hour(8)    
     df = df.sort_values(by=["time", "stock_code"])
 
     # stockStatus: 3=continuous-session, 8=closing-auction, 5=closed, ??0,7
@@ -241,6 +245,9 @@ def clean_real_time_quote(date: str):
         columns={
             "stock_code": "symbol",
             "time": "datetime",
+            "produce_time": "produce_datetime",
+            "receive_time": "receive_datetime",
+            "consume_time": "consume_datetime",
             "lastPrice": "last_price",
             "pvolume": "volume",
             "lastClose": "last_close",

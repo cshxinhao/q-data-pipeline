@@ -46,6 +46,9 @@ REQ_1MIN_BAR_FIELDS = [
 
 REQ_TICK_QUOTE_FIELDS = [
     "datetime",
+    "produce_datetime",
+    "receive_datetime",
+    "consume_datetime",
     "symbol",
     "stock_status",
     "last_price",
