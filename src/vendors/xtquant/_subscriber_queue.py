@@ -36,13 +36,14 @@ class DataConsumer:
             try:
                 # 阻塞获取数据，超时 1 秒以便检查停止信号
                 data: dict = self.queue.get(timeout=1.0)
-                data["consume_time"] = time.time() * 1e3
 
                 # 检查停止信号 (None)
                 if data is None:
                     self.flush()
                     logger.info("[Consumer] Received stop signal, exiting.")
                     break
+
+                data["consume_time"] = time.time() * 1e3
 
                 self.buffer.append(data)
 
@@ -212,11 +213,18 @@ def main():
 
     except KeyboardInterrupt:
         logger.info("[Main] KeyboardInterrupt received. Stopping...")
-
-        # Signal producer to stop
-        producer.stop_subscription()
-        # Signal consumer to stop, and save the remaining data
-        q.put(None)
-        p_consumer.join(timeout=5)
+    finally:
+        try:
+            producer.stop_subscription()
+        except Exception as e:
+            logger.warning(f"[Main] Error stopping subscription: {e}")
+        try:
+            q.put(None)
+        except Exception as e:
+            logger.warning(f"[Main] Error signaling consumer: {e}")
+        try:
+            p_consumer.join(timeout=5)
+        except Exception as e:
+            logger.warning(f"[Main] Error joining consumer: {e}")
 
         logger.info("[Main] All processes stopped.")

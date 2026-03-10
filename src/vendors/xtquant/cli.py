@@ -161,7 +161,7 @@ def clean_real_time_quote(date: str):
 @cli.group()
 def subscribe():
     pass
-
+ 
 
 @subscribe.command("realtime-quote")
 def subscribe_real_time_quote():
