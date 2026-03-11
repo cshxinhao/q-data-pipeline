@@ -3,7 +3,12 @@ from . import validator
 from .config import CheckerReportPath
 
 
-@click.group
+@click.group()
+def cli():
+    pass
+
+
+@cli.group()
 def check():
     pass
 
@@ -108,4 +113,4 @@ def cross_check_between_vendors():
 
 
 if __name__ == "__main__":
-    check()
+    cli()
