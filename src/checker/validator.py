@@ -234,6 +234,19 @@ def check_returns_outlier(market: str, vendor: str) -> pd.DataFrame:
         )
 
 
+def check_network_delay(market: str, vendor: str, date: str) -> pd.DataFrame:
+    if market == "China" and vendor == "xtquant":
+        from src.vendors.xtquant.config import DataCleanPath
+
+        date_str = pd.Timestamp(date).strftime("%Y%m%d")
+        data = pd.read_parquet(DataCleanPath().reatime_quote / f"{date_str}.parquet")
+        if data.empty:
+            return pd.DataFrame()
+
+    # Calculate network delay stats
+    # TODO: discrepancy between datetime, receive_datetime, produce_datetime and consume_datetime
+
+
 def __check_continuity(
     data: pd.DataFrame,
     start: Union[date, datetime],

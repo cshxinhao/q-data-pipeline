@@ -112,5 +112,23 @@ def cross_check_between_vendors():
         df.to_csv(filename, index=False)
 
 
+@check.command("network-delay")
+@click.option(
+    "--market", type=click.Choice(["China"]), required=True, help="Market to check."
+)
+@click.option(
+    "--vendor", type=click.Choice(["xtquant"]), required=True, help="Vendor to use."
+)
+@click.option("--date", required=True, help="Date to check.")
+def check_network_delay(market: str, vendor: str, date: str):
+    df = validator.check_network_delay(market, vendor, date)
+    if df.empty:
+        click.echo("No network delay issue found.")
+    else:
+        filename = CheckerReportPath(vendor).network_delay / f"{date}.csv"
+        click.echo(f"network delay stats generated. Saved to {filename}")
+        df.to_csv(filename, index=False)
+
+
 if __name__ == "__main__":
     cli()
