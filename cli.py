@@ -5,7 +5,7 @@ import click
 
 class VendorLazyGroup(click.Group):
     def list_commands(self, ctx: click.Context):
-        return ["tushare", "xtquant", "checker", "calculator"]
+        return ["tushare", "xtquant", "futu", "checker", "calculator"]
 
     def get_command(self, ctx: click.Context, cmd_name: str):
         if cmd_name == "tushare":
@@ -13,6 +13,9 @@ class VendorLazyGroup(click.Group):
             return module.cli
         if cmd_name == "xtquant":
             module = importlib.import_module("src.vendors.xtquant.cli")
+            return module.cli
+        if cmd_name == "futu":
+            module = importlib.import_module("src.vendors.futu.cli")
             return module.cli
         if cmd_name == "checker":
             module = importlib.import_module("src.checker.cli")

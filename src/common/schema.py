@@ -18,6 +18,8 @@ REQ_IDENTITY_FIELDS = [
     "exchange",
     "list_date",
     "delist_date",
+    "round_lot",
+    "isin",
 ]
 
 REQ_1D_BAR_FIELDS = [

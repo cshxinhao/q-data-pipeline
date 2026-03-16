@@ -76,6 +76,19 @@ echo ---------------------------------------------------------------------------
 python -m src.vendors.tushare.cli download basic --start %START_DATE% --end %END_DATE% --replace %replace%
 echo.
 
+echo ----------------------------------------------------------------------------------
+echo [STEP] Downloading Indices (%START_DATE% - %END_DATE%)
+echo ----------------------------------------------------------------------------------
+python -m src.vendors.tushare.cli download indices
+echo.
+
+echo ----------------------------------------------------------------------------------
+echo [STEP] Downloading Index Constituent (%START_DATE% - %END_DATE%)
+echo ----------------------------------------------------------------------------------
+python -m src.vendors.tushare.cli download index-constituent --start %START_DATE% --end %END_DATE% --replace %replace%
+echo.
+
+
 :: ----------------------------------------------------------------------------------
 ::  Clean Phase
 :: ----------------------------------------------------------------------------------

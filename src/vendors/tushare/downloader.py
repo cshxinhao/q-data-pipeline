@@ -202,7 +202,7 @@ def download_basic(start_date: str, end_date: str, replace: bool = False):
             _download_basic_for_dt,
             n=5,
             seconds=30,
-            dt=dt,            
+            dt=dt,
         )
 
         if df is None:
@@ -213,3 +213,86 @@ def download_basic(start_date: str, end_date: str, replace: bool = False):
         logger.info(f"{dt}: download basic data successful ...")
 
         time.sleep(10)
+
+
+def download_indices():
+    pro = get_pro()
+    markets = ["MSCI", "CSI", "SSE", "SZSE", "CICC", "SW", "OTH"]
+    for mkt in markets:
+        df = pro.index_basic(market=mkt)
+        if df.shape[0] > 0:
+            filename = DataRawPath().indices / f"{mkt}.parquet"
+            df.to_parquet(filename, index=False)
+            logger.info(f"{mkt}: download index basic data successful ...")
+
+
+def _download_index_constituent_for_month(index_code: str, year: int, month: int):
+    pro = get_pro()
+    start_date = f"{year:04d}{month:02d}01"
+    end_date = f"{year:04d}{month:02d}31"
+
+    df = pro.index_weight(
+        index_code=index_code,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    if df.shape[0] > 0:
+        df["trade_date"] = pd.to_datetime(df.loc[:, "trade_date"])
+    return df
+
+
+def download_index_constituent(start_date: str, end_date: str, replace: bool = False):
+    """
+    Download index constituent from Tushare.
+
+    The tushare API suggests download index constituent day by day.
+    """
+
+    pro = get_pro()
+
+    indices = {
+        "CSI300": "000300.SH",
+        "CSI500": "000905.SH",
+        "CSI800": "000906.SH",
+        "CSI1000": "000852.SH",
+        "CSI2000": "932000.CSI",
+        "CSIA500": "000510.CSI",
+    }
+    for name, code in indices.items():
+        filepath = DataRawPath().index_constituent / name
+        filepath.mkdir(parents=True, exist_ok=True)
+
+        # Query the list date of the index
+        index_basic = pro.index_basic(ts_code=code)
+        list_date = pd.Timestamp(index_basic.loc[:, "list_date"].values[0])
+        logger.info(f"{name} list date: {list_date}")
+
+        for dt in pd.date_range(start_date, end_date, freq="MS"):
+            year = dt.year
+            month = dt.month
+            if dt < list_date:
+                continue
+            filename = filepath / f"{year:04d}{month:02d}.parquet"
+            if filename.exists() and not replace:
+                logger.info(
+                    f"{name} & {dt}: No need to download index constituent, already exists ..."
+                )
+                continue
+
+            df = _download_index_constituent_for_month(
+                index_code=code,
+                year=year,
+                month=month,
+            )
+            if df.shape[0] > 0:
+                df.to_parquet(
+                    filename,
+                    index=False,
+                )
+                logger.info(f"{name} & {dt}: download index constituent successful ...")
+            else:
+                logger.warning(f"{name} & {dt}: No index constituent data ...")
+
+            time.sleep(1)
+
+        logger.info(f"{name}: Done")

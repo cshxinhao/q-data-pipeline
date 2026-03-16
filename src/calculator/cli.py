@@ -37,8 +37,10 @@ def calc_ml_common(market: str):
                 "volume",
                 "amount",
                 "cap_total",
+                "chinese_name",
                 "industry",
                 "board",
+                "exchange",
             ],
         ).set_index(["datetime", "symbol"])
 

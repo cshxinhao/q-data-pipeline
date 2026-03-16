@@ -78,6 +78,9 @@ def clean_identity():
         }
     )
 
+    # Round lot = 100 for A shares
+    df["round_lot"] = 100
+
     df = df.reindex(columns=REQ_IDENTITY_FIELDS)
     df.to_parquet(output_filename, index=False)
     return True

@@ -1,0 +1,10 @@
+pandas
+pyarrow
+openpyxl  # For downloading HKEX stock list
+tqdm
+requests
+lxml
+simplejson
+click
+python-dotenv
+futu-api

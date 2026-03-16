@@ -45,8 +45,8 @@ def clean_trade_calendar():
     map2prev_trade_date = dict(zip(trading_dates[1:], trading_dates[:-1]))
     df["pre_trade_date"] = df.index.map(map2prev_trade_date).values
     df["pre_trade_date"] = df["pre_trade_date"].bfill()
-
     df = df.reset_index()
+    df.loc[0, "pre_trade_date"] = None
 
     df = df[REQ_TRADE_CALENDAR_FIELDS]
     df.to_parquet(output_filename, index=False)
@@ -82,6 +82,9 @@ def clean_identity():
             "SZ": "SZSE",
         }
     )
+
+    # Round lot = 100 for A shares
+    df["round_lot"] = 100
 
     df = df.reindex(columns=REQ_IDENTITY_FIELDS)
     df.to_parquet(output_filename, index=False)
@@ -231,8 +234,8 @@ def clean_real_time_quote(date: str):
             "bidVol5",
         ],
     )
-    for col in ['time', 'produce_time', 'receive_time', 'consume_time']:
-        df[col] = pd.to_datetime(df[col], unit="ms") + pd.offsets.Hour(8)    
+    for col in ["time", "produce_time", "receive_time", "consume_time"]:
+        df[col] = pd.to_datetime(df[col], unit="ms") + pd.offsets.Hour(8)
     df = df.sort_values(by=["time", "stock_code"])
 
     # stockStatus: 3=continuous-session, 8=closing-auction, 5=closed, ??0,7

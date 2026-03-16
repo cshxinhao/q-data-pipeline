@@ -22,8 +22,8 @@ def download_trade_cal(start, end):
     try:
         downloader.download_trade_calendar(start_date=start, end_date=end)
     except Exception as e:
-            logger.error(f"Error downloading trade calendar: {e}")
-            raise e
+        logger.error(f"Error downloading trade calendar: {e}")
+        raise e
     logger.info("Trade calendar downloaded.")
 
 
@@ -32,8 +32,8 @@ def download_ticker_mapper():
     try:
         downloader.download_ticker_mapper()
     except Exception as e:
-            logger.error(f"Error downloading ticker mapper: {e}")
-            raise e
+        logger.error(f"Error downloading ticker mapper: {e}")
+        raise e
     logger.info("Ticker mapper downloaded.")
 
 
@@ -45,8 +45,8 @@ def download_1day_bar(start, end, replace):
     try:
         downloader.download_1day_bar(start_date=start, end_date=end, replace=replace)
     except Exception as e:
-            logger.error(f"Error downloading 1day bar: {e}")
-            raise e
+        logger.error(f"Error downloading 1day bar: {e}")
+        raise e
     logger.info("1day bar downloaded.")
 
 
@@ -58,8 +58,8 @@ def download_adj_factor(start, end, replace):
     try:
         downloader.download_adj_factor(start_date=start, end_date=end, replace=replace)
     except Exception as e:
-            logger.error(f"Error downloading adj factor: {e}")
-            raise e
+        logger.error(f"Error downloading adj factor: {e}")
+        raise e
     logger.info("Adj factor downloaded.")
 
 
@@ -71,9 +71,34 @@ def download_basic(start, end, replace):
     try:
         downloader.download_basic(start_date=start, end_date=end, replace=replace)
     except Exception as e:
-            logger.error(f"Error downloading basic data: {e}")
-            raise e
+        logger.error(f"Error downloading basic data: {e}")
+        raise e
     logger.info("Basic data downloaded.")
+
+
+@download.command("indices")
+def download_indices():
+    try:
+        downloader.download_indices()
+    except Exception as e:
+        logger.error(f"Error downloading indices: {e}")
+        raise e
+    logger.info("Indices downloaded.")
+
+
+@download.command("index-constituent")
+@click.option("--start", required=True, help="Start date (YYYYMMDD)")
+@click.option("--end", required=True, help="End date (YYYYMMDD)")
+@click.option("--replace", type=bool, required=True, help="Replace existing files")
+def download_index_constituent(start, end, replace):
+    try:
+        downloader.download_index_constituent(
+            start_date=start, end_date=end, replace=replace
+        )
+    except Exception as e:
+        logger.error(f"Error downloading index weights: {e}")
+        raise e
+    logger.info("Index weights downloaded.")
 
 
 @cli.group()
@@ -86,8 +111,8 @@ def clean_trade_cal():
     try:
         cleaner.clean_trade_calendar()
     except Exception as e:
-            logger.error(f"Error cleaning trade calendar: {e}")
-            raise e
+        logger.error(f"Error cleaning trade calendar: {e}")
+        raise e
     logger.info("Trade calendar cleaned.")
 
 
@@ -96,8 +121,8 @@ def clean_identity():
     try:
         cleaner.clean_identity()
     except Exception as e:
-            logger.error(f"Error cleaning identity: {e}")
-            raise e
+        logger.error(f"Error cleaning identity: {e}")
+        raise e
     logger.info("Identity cleaned.")
 
 
@@ -109,8 +134,8 @@ def clean_1day_bar_price(start, end, replace):
     try:
         cleaner.clean_1day_bar(start_date=start, end_date=end, replace=replace)
     except Exception as e:
-            logger.error(f"Error cleaning 1day bar: {e}")
-            raise e
+        logger.error(f"Error cleaning 1day bar: {e}")
+        raise e
     logger.info("1day bar cleaned.")
 
 
@@ -122,8 +147,8 @@ def clean_adj_factor(start, end, replace):
     try:
         cleaner.clean_adj_factor(start_date=start, end_date=end, replace=replace)
     except Exception as e:
-            logger.error(f"Error cleaning adj factor: {e}")
-            raise e
+        logger.error(f"Error cleaning adj factor: {e}")
+        raise e
     logger.info("Adj factor cleaned.")
 
 
@@ -135,8 +160,8 @@ def clean_cap(start, end, replace):
     try:
         cleaner.clean_cap(start_date=start, end_date=end, replace=replace)
     except Exception as e:
-            logger.error(f"Error cleaning cap: {e}")
-            raise e
+        logger.error(f"Error cleaning cap: {e}")
+        raise e
     logger.info("Cap cleaned.")
 
 
@@ -148,8 +173,8 @@ def clean_valuation(start, end, replace):
     try:
         cleaner.clean_valuation(start_date=start, end_date=end, replace=replace)
     except Exception as e:
-            logger.error(f"Error cleaning valuation: {e}")
-            raise e
+        logger.error(f"Error cleaning valuation: {e}")
+        raise e
     logger.info("Valuation cleaned.")
 
 
@@ -160,8 +185,8 @@ def clean_dataset(year, replace):
     try:
         cleaner.clean_dataset(year=year, replace=replace)
     except Exception as e:
-            logger.error(f"Error cleaning dataset: {e}")
-            raise e
+        logger.error(f"Error cleaning dataset: {e}")
+        raise e
     logger.info("Dataset cleaned.")
 
 
@@ -170,8 +195,8 @@ def clean_listed_days():
     try:
         cleaner.clean_listed_days()
     except Exception as e:
-            logger.error(f"Error cleaning listed days: {e}")
-            raise e
+        logger.error(f"Error cleaning listed days: {e}")
+        raise e
     logger.info("Listed days cleaned.")
 
 

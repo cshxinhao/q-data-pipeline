@@ -31,3 +31,6 @@ credentials.json
 .idea/
 *.swp
 *.swo
+
+# Jupyter
+.ipynb_checkpoints/
